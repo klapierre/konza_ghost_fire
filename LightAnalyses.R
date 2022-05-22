@@ -1,7 +1,7 @@
 setwd("C:\\Users\\mavolio2\\Dropbox\\Konza Research\\GhostFire\\DATA\\Compiled data\\")
 
 library(tidyverse)
-theme_set(theme_bw())
+theme_set(theme_bw(20))
 
 light<-read.csv("Light_2014_2019.CSV")%>%
   filter(Season=="Early")%>%
@@ -16,16 +16,30 @@ trts<-read.csv("GF_PlotList_Trts.csv") %>%
 light2<-light %>% 
   left_join(trts)
 
-means<-light2 %>% 
-  group_by(Year, BurnFreq, Litter) %>% 
-  summarize(Mlight=mean(CanopyEffect), sdlight=sd(CanopyEffect), n=length(CanopyEffect)) %>% 
-  mutate(se=sdlight/sqrt(n))
+l2014=light2 %>% 
+  filter(Year==2014|Year==2015) %>% 
+  rename(LightReduction=CanopyEffect) %>% 
+  select(Year, Watershed, Block, plot, BurnFreq, Plot, LightReduction, Litter, Nutrient, treatment)
 
-ggplot(data=means, aes(x=Year, y=Mlight, color=as.factor(BurnFreq), shape=Litter))+
+ltrtyrs<-light2 %>% 
+  filter(Year!=2014&Year!=2015) %>% 
+  mutate(LightReduction=ifelse(Litter=="A", CanopyEffect, ifelse(Litter=="P", LitterCanopyEffect, 999))) %>% 
+  select(Year, Watershed, Block, plot, BurnFreq, Plot, LightReduction, Litter, Nutrient, treatment)
+
+light3<-l2014 %>% 
+  bind_rows(ltrtyrs)
+
+means<-light3 %>% 
+  group_by(Year, BurnFreq, Litter) %>%
+  summarize(Mlight=mean(LightReduction, na.rm=T), sdlight=sd(LightReduction), n=length(LightReduction)) %>% 
+  mutate(se=sdlight/sqrt(n)) %>% 
+  mutate(WSBurn=ifelse(BurnFreq==1, "Annually Burned", "Unburned"))
+
+ggplot(data=means, aes(x=Year, y=Mlight, color=as.factor(Litter)))+
   geom_point(size=5)+
   geom_line()+
   geom_errorbar(aes(ymin=Mlight-se, ymax=Mlight+se), width=0.1)+
-  scale_color_manual(name="Watershed\nBurn Freq.", values = c("red", "black"))+
-  scale_shape_manual(limits = c("Absent", "Present"), values=c(2,19))+
+  scale_color_manual(name="Litter", values = c("yellow", "black"))+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
-  ylab("Pct. Light Reduction")
+  ylab("Pct. Light Reduction")+
+  facet_wrap(~WSBurn, ncol=1)
