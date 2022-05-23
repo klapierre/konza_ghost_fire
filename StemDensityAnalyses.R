@@ -32,7 +32,7 @@ fit1 <- lmer(total ~  Litter*Nutrient*Year +(1|Watershed/Block), data = subset(t
 anova(fit1)
 
 ###analysis of unburned only
-fit20 <- lmer(total ~  Litter*Nutrient*Year +(1|Watershed/Block), data = total)
+fit20 <- lmer(total ~  Litter*Nutrient*Year +(1|Watershed/Block), data = subset(total, Burn==20))
 anova(fit20)
 
 
