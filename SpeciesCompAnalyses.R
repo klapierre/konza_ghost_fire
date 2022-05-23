@@ -158,3 +158,12 @@ ggplot(data=means14, aes(x=Burn.Trt, y=meven, fill=Burn.Trt))+
   ylab("Species Evenness")+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none")+
   scale_x_discrete(name="Burn Frequency", labels=c("Annual", "Unburned"))
+
+
+##############################
+#Analysis of composition
+############################
+
+###Unburned as the reference
+unref<-multivariate_difference(sp2, time.var="Year", species.var="", abundance.var = "pcover", replicate.var = "plot_id", treatment.var="", reference.treatment = "control_control")
+
