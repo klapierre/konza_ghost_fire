@@ -1,10 +1,11 @@
 setwd("C:\\Users\\mavolio2\\Dropbox\\Konza Research\\GhostFire\\DATA\\Compiled data\\")
+setwd("E:\\Dropbox\\Konza Research\\GhostFire\\DATA\\Compiled data\\")
 
 library(tidyverse)
 library(stringr)
 library(lme4)
 library(lmerTest)
-theme_set(theme_bw())
+theme_set(theme_bw(20))
 
 sd<-read.csv("StemDensity_2014-2019.CSV") %>%
   mutate(plot=str_sub(Plot, -1)) %>% 
@@ -62,4 +63,28 @@ ggplot(data=subset(means, treatment!="drop"&treatment!="Annual+N+L"&treatment!="
   geom_errorbar(aes(ymin=Mtot-se, ymax=Mtot+se), width=0.1)+
   ylab("Number of Stems")+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+
+##pre treatment data in 2014
+t14<-total %>% 
+  filter(Year==2014)
+
+#no difference in # stems btwn burn trts
+fit14 <- lmer(total ~  Burn +(1|Watershed/Block), data = t14)
+anova(fit14)
          
+#ther eis a difference in stems by watershed
+summary(aov(total~Watershed, data=t14))
+
+means14<-t14 %>% 
+  group_by(Burn) %>%
+  summarize(Mtot=mean(total, na.rm=T), sddev=sd(total), n=length(total)) %>% 
+  mutate(se=sddev/sqrt(n))
+
+ggplot(data=means14, aes(x=as.factor(Burn), y=Mtot, fill=as.factor(Burn)))+
+  geom_bar(stat="identity")+
+  scale_fill_manual(values=c("black", "gray47"))+
+  geom_errorbar(aes(ymin=Mtot-se, ymax=Mtot+se), width=0.1)+
+  ylab("Number of Stems")+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none")+
+  scale_x_discrete(name="Burn Frequency", labels=c("Annual", "Unburned"))
