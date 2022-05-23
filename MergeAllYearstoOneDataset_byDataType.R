@@ -1,6 +1,10 @@
 setwd("~/Dropbox/Ghost Fire/DATA")
 setwd("C:\\Users\\mavolio2\\Dropbox\\Konza Research\\GhostFire\\Data")
+setwd("E:\\Dropbox\\Konza Research\\GhostFire\\Data")
 library(tidyverse)
+
+##Lots of the data we read in add odd things to the first column, use this code in the read.csv line to not have that
+# fileEncoding="UTF-8-BOM"
 
 ######################################################################################
 ######################################################################################
@@ -128,55 +132,59 @@ write.csv(Light_AllYears, "Compiled data\\Light_2014_2019.csv", row.names = F)
 ######################################################################################
 ######################################################################################
 ####import all Species Comp data
-SC2014<-read.csv("GhostFire2014_Data/Species Comp/GhostFire_SpComp_2014.csv")%>%
+SC2014<-read.csv("GhostFire2014_Data/Species Comp/GhostFire_SpComp_2014.csv",fileEncoding="UTF-8-BOM")%>%
   select(-Experiment, -Site) %>% 
-  group_by(ï..Year, Burn.Trt, Block, Plot, spnum, Species) %>% 
-  gather(Season, cover, June:August)%>%
-  filter(cover!=0)
-
-SC2015<-read.csv("GhostFire2015_Data/SpeciesComp/GhostFire_SpComp_2015.csv")%>%
-  select(-Experiment, -Site, -ï..Entry, -Max.cov, -X.1, -X.2, -X.3, -X.4, -X.5, -X) %>% 
   group_by(Year, Burn.Trt, Block, Plot, spnum, Species) %>% 
   gather(Season, cover, June:August)%>%
   filter(cover!=0)
 
-SC2016<-read.csv("GhostFire2016_Data/SpeciesComp/GhostFire_SpComp_2016.csv")%>%
-  select(-Experiment, -Site, -ï..Entry, -Max.cov, -X.1, -X.2, -X.3, -X.4, -X.5, -X) %>% 
+SC2015<-read.csv("GhostFire2015_Data/SpeciesComp/GhostFire_SpComp_2015.csv",fileEncoding="UTF-8-BOM")%>%
+  select(-Experiment, -Site, -Entry, -Max.cov, -X.1, -X.2, -X.3, -X.4, -X.5, -X) %>% 
   group_by(Year, Burn.Trt, Block, Plot, spnum, Species) %>% 
   gather(Season, cover, June:August)%>%
   filter(cover!=0)
 
-SC2017<-read.csv("GhostFire2017_Data/SpeciesComp/GhostFire_SpComp_2017.csv")%>%
-  select(-Experiment, -Site, -ï..Entry, -Max.cov, -X.1, -X.2, -X, -Comments) %>% 
+SC2016<-read.csv("GhostFire2016_Data/SpeciesComp/GhostFire_SpComp_2016.csv",fileEncoding="UTF-8-BOM")%>%
+  select(-Experiment, -Site, -Entry, -Max.cov, -X.1, -X.2, -X.3, -X.4, -X.5, -X) %>% 
   group_by(Year, Burn.Trt, Block, Plot, spnum, Species) %>% 
   gather(Season, cover, June:August)%>%
   filter(cover!=0)
 
-SC2018<-read.csv("GhostFire2018_Data/SpeciesComp/GhostFire_SpComp_2018.csv")%>%
+SC2017<-read.csv("GhostFire2017_Data/SpeciesComp/GhostFire_SpComp_2017.csv", fileEncoding="UTF-8-BOM")%>%
+  select(-Experiment, -Site, -Entry, -Max.cov, -X.1, -X.2, -X, -Comments, -Species) %>% 
+  group_by(Year, Burn.Trt, Block, Plot, spnum) %>% 
+  gather(Season, cover, June:August)%>%
+  filter(cover!=0)
+
+SC2018<-read.csv("GhostFire2018_Data/SpeciesComp/GhostFire_SpComp_2018.csv",fileEncoding="UTF-8-BOM")%>%
+  select(-Experiment, -Site, -X, -Comments, -Species) %>% 
+  group_by(Year, Burn.Trt, Block, Plot, spnum) %>% 
+  gather(Season, cover, June:August)%>%
+  filter(cover!=0)
+
+#SC2019<-read.csv("GhostFire2010_Data/SpeciesComp/GhostFire_SpComp_2019.csv",fileEncoding="UTF-8-BOM")%>%
   select(-Experiment, -Site, -X, -Comments) %>% 
-  group_by(ï..Year, Burn.Trt, Block, Plot, spnum, Species) %>% 
-  gather(Season, cover, June:August)%>%
-  filter(cover!=0)
-
-SC2019<-read.csv("GhostFire2010_Data/SpeciesComp/GhostFire_SpComp_2019.csv")%>%
-  select(-Experiment, -Site, -X, -Comments) %>% 
-  group_by(ï..Year, Burn.Trt, Block, Plot, spnum, Species) %>% 
+  group_by(Year, Burn.Trt, Block, Plot, spnum, Species) %>% 
   gather(Season, cover, June:August)%>%
   filter(cover!=0)
 
 #merge all years of SpComp together with column names Year, Burn.Trt, Block, Plot, spnum, Species, Season, cover
+#Now also getting the max cover at this dataset.
 
-SpComp_AllYears<-bind_rows(SC2014, SC2015, SC2016, SC2017, SC2018)
+SpComp_AllYears<-bind_rows(SC2014, SC2015, SC2016, SC2017, SC2018) %>% 
+  ungroup() %>% 
+  select(-Watershed, -Species) %>% 
+  group_by(Year, Burn.Trt, Block, Plot, spnum) %>% 
+  summarize(pcover=max(cover))
 
 # bring in sp list
-SpList<-read.csv("~/Dropbox/Ghost Fire/Data/GhostFire_Konza_spplist.csv")
+SpList<-read.csv("GhostFire_Konza_spplist.csv", fileEncoding="UTF-8-BOM")
 SpComp_AllYears2<-SpComp_AllYears %>% 
-  right_join(SpList) %>% 
-  filter(Year!="NA")
+  left_join(SpList) 
 ### Check to make sure species names, numbers, and cleaned names match up. 
 #SK checked 2014-2018 and found multiple errors (>15)
 #SK cleaned sp comp and sp list through 2018 on May 21, 2019
-write.csv(SpComp_AllYears2, "SpComp_2014-2018.csv", row.names = F)
+write.csv(SpComp_AllYears2, "Compiled data\\SpComp_2014-2018.csv", row.names = F)
 
 
 
