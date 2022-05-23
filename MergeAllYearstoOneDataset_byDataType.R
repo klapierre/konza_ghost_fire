@@ -167,6 +167,7 @@ SC2019<-read.csv("GhostFire2010_Data/SpeciesComp/GhostFire_SpComp_2019.csv")%>%
 #merge all years of SpComp together with column names Year, Burn.Trt, Block, Plot, spnum, Species, Season, cover
 
 SpComp_AllYears<-bind_rows(SC2014, SC2015, SC2016, SC2017, SC2018)
+
 # bring in sp list
 SpList<-read.csv("~/Dropbox/Ghost Fire/Data/GhostFire_Konza_spplist.csv")
 SpComp_AllYears2<-SpComp_AllYears %>% 
@@ -251,20 +252,55 @@ write.csv(StemDensity_AllYears2, "Compiled Data/StemDensity_2014-2019.csv", row.
 ######################################################################################
 ######################################################################################
 #import all biomass data, calculate mean across two pseudo replicates
-ANPP2014<-read.csv("~/Dropbox/Ghost Fire/Data/GhostFire2014_Data/Biomass/GhostFire_Biomass_2014.csv")%>%
+ANPP2014<-read.csv("GhostFire2014_Data/Biomass/GhostFire_Biomass_2014.csv")%>%
   select(-Notes)%>%
-  mutate_at(c(7:10), ~replace(., is.na(.), 0))
-ANPP2015<-read.csv("~/Dropbox/Ghost Fire/Data/GhostFire2015_Data/Biomass/GhostFire_Biomass_2015.csv")%>%
+  mutate_at(c(7:10), ~replace(., is.na(.), 0))%>%
+  rename(Burn=BurnFreq)%>%
+  mutate(BurnFreq=ifelse(Burn=="Annual", 1, 20)) %>% 
+  select(-Burn) %>% 
+  rename(Year=ï..Year)
+
+ANPP2015<-read.csv("GhostFire2015_Data/Biomass/GhostFire_Biomass_2015.csv")%>%
   select(-Notes)%>%
   separate(Plot, c("Block", "Plot"), sep=1) %>% 
   mutate_at(c(7:10), ~replace(., is.na(.), 0)) %>% 
-  mutate(Plot=as.integer(Plot))
-ANPP2016<-read.csv("~/Dropbox/Ghost Fire/Data/GhostFire2016_Data/Biomass/GhostFire_Biomass_2016_formatted.csv")%>%
+  mutate(Plot=as.integer(Plot))%>% 
+  rename(Year=ï..Year)
+
+ANPP2016<-read.csv("GhostFire2016_Data/Biomass/GhostFire_Biomass_2016_formatted.csv")%>%
   select(-Notes)%>%
   separate(Plot, c("Block", "Plot"), sep=1) %>% 
   mutate_at(c(7:10), ~replace(., is.na(.), 0)) %>% 
-  mutate(Plot=as.integer(Plot))
-#merge all years of StemDensity together with column names Year, Burn, Watershed, Block, Plot, spnum, Species, stems
-ANPP_AllYears<-bind_rows(ANPP2014, ANPP2015, ANPP2016)
-#write.csv(ANPP_AllYears, "ANPP_2014-2016.csv", row.names = F)
+  mutate(Plot=as.integer(Plot))%>% 
+  rename(Year=ï..Year)
+
+#ANPP2017<-read.csv("GhostFire2016_Data/Biomass/GhostFire_Biomass_2016_formatted.csv")%>%
+  select(-Notes)%>%
+  separate(Plot, c("Block", "Plot"), sep=1) %>% 
+  mutate_at(c(7:10), ~replace(., is.na(.), 0)) %>% 
+  mutate(Plot=as.integer(Plot))%>% 
+    rename(Year=ï..Year)
+  
+ANPP2018<-read.csv("GhostFire2018_Data/Biomass/GhostFire_Biomass_2018.csv")%>%
+  na.omit() %>% 
+    mutate(Plot=as.integer(Plot))%>% 
+  rename(Year=ï..Year)
+
+ANPP2019<-read.csv("GhostFire2019_Data/Biomass/GhostFire_Biomass_DataEntry2019.csv")%>%
+    select(-Notes, -ï..WhoWeighed, -DateWeighed)%>%
+    separate(Plot, c("Block", "Plot"), sep=1) %>% 
+    mutate_at(c(7:10), ~replace(., is.na(.), 0)) %>% 
+    mutate(Plot=as.integer(Plot)) %>% 
+  rename(Watershed=Wateshed)
+
+#merge all years of ANPP together with column names Year, BurnFreq, Watershed, Block, Plot, Replicate, Grass, Forb, Woody, P.Dead Species, stems
+ANPP_AllYears<-bind_rows(ANPP2014, ANPP2015, ANPP2016, ANPP2018, ANPP2019) %>% 
+  group_by(Year, BurnFreq, Watershed, Block, Plot) %>% 
+  summarize_all(mean) %>% 
+  select(-Replicate, -P.Dead) %>% 
+  pivot_longer(Grass:Woody, names_to = "Type", values_to = "Biomass") %>% 
+  group_by(Year, BurnFreq, Watershed, Block, Plot) %>% 
+  summarise(total=sum(Biomass)*10)
+  
+write.csv(ANPP_AllYears, "Compiled Data/ANPP_2014-2019.csv", row.names = F)
 
