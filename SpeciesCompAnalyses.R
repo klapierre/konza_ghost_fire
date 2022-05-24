@@ -6,6 +6,7 @@ library(codyn)
 library(stringr)
 library(lme4)
 library(lmerTest)
+library(vegan)
 theme_set(theme_bw(20))
 
 sp<-read.csv("SpComp_2014-2018.CSV") %>%
@@ -18,12 +19,12 @@ trts<-read.csv("GF_PlotList_Trts.csv")
 sp2<-sp %>% 
   left_join(trts)
 
+richeven<-community_structure(sp2, time.var="Year", replicate.var = "plot_id", abundance.var = "pcover") %>% 
+  left_join(trts)
+
 ###################################
 ###analysis richness
 ######################################
-
-richeven<-community_structure(sp2, time.var="Year", replicate.var = "plot_id", abundance.var = "pcover") %>% 
-  left_join(trts)
 
 fit <- lmer(richness ~  Burn.Trt*Litter*Nutrient*Year +(1|Watershed/Block), data = richeven)
 anova(fit)
@@ -164,6 +165,60 @@ ggplot(data=means14, aes(x=Burn.Trt, y=meven, fill=Burn.Trt))+
 #Analysis of composition
 ############################
 
+sp3<-sp2 %>% 
+  mutate(trt2=paste(Burn.Trt, treatment, sep="::"))
+
 ###Unburned as the reference
-unref<-multivariate_difference(sp2, time.var="Year", species.var="", abundance.var = "pcover", replicate.var = "plot_id", treatment.var="", reference.treatment = "control_control")
+unref<-multivariate_difference(sp3, time.var="Year", species.var="spnum", abundance.var = "pcover", replicate.var = "plot_id", treatment.var="trt2", reference.treatment = "Unburned::control_control")
+
+unref2<-unref%>% 
+  separate(trt22, into=c("Burn.Trt2", "treatment"), sep="::") %>% 
+  filter(Burn.Trt2!="Unburned") %>% 
+  mutate(treatment2=ifelse(treatment=="control_control", "Annual Burn", ifelse(treatment=="control_nitrogen", "Annual+Nitrogen", ifelse(treatment=="litadded_control", "Annual+Litter", ifelse(treatment=="litadded_nitrogen", "Annual+N+L", "drop"))))) %>% 
+  filter(treatment2!="drop")
+
+ggplot(data=unref2, aes(x=Year, y=composition_diff, color=treatment2))+
+  geom_point(size=3)+
+  geom_line()+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  ylab("Compositon Difference\n to Unburned")+
+  scale_color_manual(name="Treatment", breaks=c("Annual Burn", "Annual+Nitrogen", "Annual+Litter", "Annual+N+L"), values=c("black", "red", "blue", "darkorchid4"))
+
+###Annual as the reference
+annref<-multivariate_difference(sp3, time.var="Year", species.var="spnum", abundance.var = "pcover", replicate.var = "plot_id", treatment.var="trt2", reference.treatment = "Annual::control_control")
+
+annref2<-annref%>% 
+  separate(trt22, into=c("Burn.Trt2", "treatment"), sep="::") %>% 
+  filter(Burn.Trt2!="Annual") %>% 
+  mutate(treatment2=ifelse(treatment=="control_control", "Unburned", ifelse(treatment=="control_sugar", "Unburned-Nitrogen", ifelse(treatment=="litremoved_control", "Unburned-Litter", ifelse(treatment=="litremoved_sugar", "Unburned-N-L", "drop"))))) %>% 
+  filter(treatment2!="drop")
+
+ggplot(data=annref2, aes(x=Year, y=composition_diff, color=treatment2))+
+  geom_point(size=3)+
+  geom_line()+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  ylab("Compositon Difference \nto Annual Burn")+
+  scale_color_manual(name="Treatment", breaks=c("Unburned", "Unburned-Nitrogen", "Unburned-Litter", "Unburned-N-L"), values=c("gray47", "red", "blue", "darkorchid4"))
+
+#####looking at 2014 data
+sp14<-sp3 %>% 
+  filter(Year==2014) %>% 
+  mutate(sp=paste(genus, species, sep="_")) %>% 
+  select(Burn.Trt, Plot, sp, pcover) %>% 
+  pivot_wider(names_from='sp', values_from='pcover', values_fill = 0)
+
+plotinfo=sp14%>%
+  select(Burn.Trt, Plot)
+
+mds<-metaMDS(sp14[3:59],distance= "bray")
+
+scores<-as.data.frame(mds$points) %>% 
+  bind_cols(plotinfo)
+
+ggplot(data=scores, aes(x=MDS1, y=MDS2, color=Burn.Trt))+
+  geom_point(size=3)+
+  scale_color_manual(name="Burn Frequency", values=c('black', 'gray47'))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+  
+
 
