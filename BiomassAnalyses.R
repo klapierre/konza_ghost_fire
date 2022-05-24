@@ -4,7 +4,7 @@ library(tidyverse)
 library(stringr)
 library(lme4)
 library(lmerTest)
-theme_set(theme_bw())
+theme_set(theme_bw(20))
 
 anpp<-read.csv("ANPP_2014-2019.CSV") %>% 
   rename(plot=Plot) %>% 
@@ -52,7 +52,7 @@ ggplot(data=subset(means, treatment!="drop"&treatment!="Unburned-N-L"&treatment!
   geom_line(size=1)+
   scale_color_manual(name="Treatment", breaks = c("Annual Burn","Annual+Nitrogen", "Annual+Litter", "Annual+N+L", "Unburned"), values=c("black", "red", "blue","darkorchid4", "gray47"))+
   geom_errorbar(aes(ymin=Mtot-se, ymax=Mtot+se), width=0.1)+
-  ylab("Number of Stems")+
+  ylab("ANPP")+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
 
 #unburned
@@ -61,5 +61,33 @@ ggplot(data=subset(means, treatment!="drop"&treatment!="Annual+N+L"&treatment!="
   geom_line(size=1)+
   scale_color_manual(name="Treatment", breaks = c("Annual Burn","Unburned-Nitrogen", "Unburned-Litter", "Unburned-N-L", "Unburned"), values=c("black", "red", "blue","darkorchid4", "gray47"))+
   geom_errorbar(aes(ymin=Mtot-se, ymax=Mtot+se), width=0.1)+
-  ylab("Number of Stems")+
+  ylab("ANPP")+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+
+###2014 data
+
+b14<-anpp2 %>% 
+  filter(Year==2014)
+
+#no difference in ANPP btwn burn trts
+fit14 <- lmer(total ~  as.factor(BurnFreq) +(1|Watershed/Block), data = b14)
+anova(fit14)
+
+#there is a difference in ANPP by watershed
+summary(aov(total~Watershed, data=b14))
+
+means14<-b14 %>% 
+  group_by(BurnFreq) %>%
+  summarize(mtot=mean(total, na.rm=T), sddev=sd(total), n=length(total)) %>% 
+  mutate(se=sddev/sqrt(n))
+
+ggplot(data=means14, aes(x=as.factor(BurnFreq), y=mtot, fill=as.factor(BurnFreq)))+
+  geom_bar(stat="identity")+
+  scale_fill_manual(values=c("black", "gray47"))+
+  geom_errorbar(aes(ymin=mtot-se, ymax=mtot+se), width=0.1)+
+  ylab("ANPP")+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none")+
+  scale_x_discrete(name="Burn Frequency", labels=c("Annual", "Unburned"))
+
+
