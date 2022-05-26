@@ -162,16 +162,18 @@ SC2018<-read.csv("GhostFire2018_Data/SpeciesComp/GhostFire_SpComp_2018.csv",file
   gather(Season, cover, June:August)%>%
   filter(cover!=0)
 
-#SC2019<-read.csv("GhostFire2010_Data/SpeciesComp/GhostFire_SpComp_2019.csv",fileEncoding="UTF-8-BOM")%>%
-  select(-Experiment, -Site, -X, -Comments) %>% 
-  group_by(Year, Burn.Trt, Block, Plot, spnum, Species) %>% 
+SC2019<-read.csv("GhostFire2019_Data/SpeciesComp/GhostFire_SpComp_2019.csv",fileEncoding="UTF-8-BOM")%>%
+  select(-Experiment, -Site, -Comments) %>% 
+  filter(spnum!="litter") %>%# there was a lot of litter in 2019
+  mutate(spnum=as.integer(spnum)) %>% 
+  group_by(Year, Burn.Trt, Block, Plot, spnum) %>% 
   gather(Season, cover, June:August)%>%
   filter(cover!=0)
 
 #merge all years of SpComp together with column names Year, Burn.Trt, Block, Plot, spnum, Species, Season, cover
 #Now also getting the max cover at this dataset.
 
-SpComp_AllYears<-bind_rows(SC2014, SC2015, SC2016, SC2017, SC2018) %>% 
+SpComp_AllYears<-bind_rows(SC2014, SC2015, SC2016, SC2017, SC2018, SC2019) %>% 
   ungroup() %>% 
   select(-Watershed, -Species) %>% 
   group_by(Year, Burn.Trt, Block, Plot, spnum) %>% 
@@ -184,7 +186,7 @@ SpComp_AllYears2<-SpComp_AllYears %>%
 ### Check to make sure species names, numbers, and cleaned names match up. 
 #SK checked 2014-2018 and found multiple errors (>15)
 #SK cleaned sp comp and sp list through 2018 on May 21, 2019
-write.csv(SpComp_AllYears2, "Compiled data\\SpComp_2014-2018.csv", row.names = F)
+write.csv(SpComp_AllYears2, "Compiled data\\SpComp_2014-2019.csv", row.names = F)
 
 
 
