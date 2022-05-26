@@ -43,3 +43,10 @@ ggplot(data=means, aes(x=Year, y=Mlight, color=as.factor(Litter)))+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
   ylab("Pct. Light Reduction")+
   facet_wrap(~WSBurn, ncol=1)
+
+###analysis of light
+fit <- lmer(LightReduction ~  as.factor(Burn)*Litter*Nutrient*as.factor(Year) +(1|Watershed/Block), data = light3)
+anova(fit, ddf='Kenward-Roger')
+
+emmeans(fit, pairwise~Litter|as.factor(Burn), adjust="holm")
+emmeans(fit, pairwise~Nutrient*as.factor(Burn), adjust="holm")
