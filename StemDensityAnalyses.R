@@ -5,6 +5,7 @@ library(tidyverse)
 library(stringr)
 library(lme4)
 library(lmerTest)
+library(emmeans)
 theme_set(theme_bw(20))
 
 sd<-read.csv("StemDensity_2014-2019.CSV") %>%
@@ -25,15 +26,19 @@ total=sd2 %>%
   group_by(Year, Watershed, Block, Plot, Litter, Nutrient, treatment, Burn) %>% 
   summarise(total=sum(stems))
 
-fit <- lmer(total ~  Burn*Litter*Nutrient*Year +(1|Watershed/Block), data = total)
-anova(fit)
+fit <- lmer(total ~  as.factor(Burn)*Litter*Nutrient*as.factor(Year) +(1|Watershed/Block), data = total)
+anova(fit, ddf='Kenward-Roger')
+
+emmeans(fit, pairwise~Litter|as.factor(Burn), adjust="holm")
+emmeans(fit, pairwise~Nutrient*as.factor(Burn), adjust="holm")
+
 
 ###analysis annual burn only
-fit1 <- lmer(total ~  Litter*Nutrient*Year +(1|Watershed/Block), data = subset(total, Burn==1))
+fit1 <- lmer(total ~  Litter*Nutrient*as.factor(Year) +(1|Watershed/Block), data = subset(total, Burn==1))
 anova(fit1)
 
 ###analysis of unburned only
-fit20 <- lmer(total ~  Litter*Nutrient*Year +(1|Watershed/Block), data = subset(total, Burn==20))
+fit20 <- lmer(total ~  Litter*Nutrient*as.factor(Year) +(1|Watershed/Block), data = subset(total, Burn==20))
 anova(fit20)
 
 
@@ -88,3 +93,48 @@ ggplot(data=means14, aes(x=as.factor(Burn), y=Mtot, fill=as.factor(Burn)))+
   ylab("Number of Stems")+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none")+
   scale_x_discrete(name="Burn Frequency", labels=c("Annual", "Unburned"))
+
+
+##############################
+#####Analysis of overall treatments
+###########################
+
+mstemsL<-total %>% 
+  group_by(Burn, Litter) %>%
+  summarize(mtot=mean(total, na.rm=T), sddev=sd(total), n=length(total)) %>% 
+  mutate(se=sddev/sqrt(n))
+
+ggplot(data=mstemsL, aes(x=as.factor(Burn), y=mtot, fill=Litter))+
+  geom_bar(stat="identity", position = position_dodge())+
+  geom_errorbar(aes(ymin=mtot-se, ymax=mtot+se), width=0.1, position=position_dodge(0.9))+
+  scale_fill_manual(values=c("gold", "darkgoldenrod4"), labels=c('Absent', 'Present'))+
+  scale_x_discrete(labels=c('Annual', 'Unburned'))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  annotate("text", x=0.75, y=245, label="A", size=5)+
+  annotate("text", x=1.25, y=150, label="BCD", size=5)+
+  annotate("text", x=1.75, y=170, label="C", size=5)+
+  annotate("text", x=2.25, y=140, label="D", size=5)+
+  xlab('Burn Treatment')+
+  ylab('Number of Stems') 
+
+mstemsN<-total %>% 
+  group_by(Burn, Nutrient) %>%
+  summarize(mtot=mean(total, na.rm=T), sddev=sd(total), n=length(total)) %>% 
+  mutate(se=sddev/sqrt(n)) %>% 
+  mutate(Ntrt=ifelse(Nutrient=='S', 1, ifelse(Nutrient=='C', 2, 3)))
+
+ggplot(data=mstemsN, aes(x=as.factor(Burn), y=mtot, fill=as.factor(Ntrt)))+
+  geom_bar(stat="identity", position=position_dodge())+
+  geom_errorbar(aes(ymin=mtot-se, ymax=mtot+se), width=0.1, position=position_dodge(0.9))+
+  scale_fill_manual(name='Nutrient\nTreatment', values=c('orange', "orangered", 'orangered4'),labels=c("-N", ' C', '+N'))+
+  scale_x_discrete(labels=c('Annual', 'Unburned'))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  annotate("text", x=0.72, y=175, label="B", size=5)+
+  annotate('text', x=1, y=215, label="A", size=5)+
+  annotate("text", x=1.27, y=215, label="A", size=5)+
+  annotate("text", x=1.72, y=165, label="B", size=5)+
+  annotate("text", x=2, y=160, label="B", size=5)+
+  annotate("text", x=2.27, y=155, label="B", size=5)+
+  xlab('Burn Treatment')+
+  ylab('Number of Stems') 
+
