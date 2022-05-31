@@ -377,3 +377,29 @@ ggplot(data=scores, aes(x=MDS1, y=MDS2, color=as.factor(Year), shape=trt))+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
   facet_wrap(~Burn.Trt, ncol=1)
 
+####looking at Andro
+fit <- lmer(pcover ~  as.factor(Burn.Trt)*Litter*Nutrient*as.factor(Year) +(1|Watershed/Block), data = subset(sp2, Year!=2014&spnum==2))
+anova(fit, ddf='Kenward-Roger')
+
+emmeans(fit, pairwise~as.factor(Burn)|Nutrient, adjust="holm")
+
+mstemsN<-sp2 %>% 
+  filter(Year!=2014, spnum==2) %>% 
+  group_by(Litter, Nutrient) %>%
+  summarize(mtot=mean(pcover, na.rm=T), sddev=sd(pcover), n=length(pcover)) %>% 
+  mutate(se=sddev/sqrt(n)) %>% 
+  mutate(Ntrt=ifelse(Nutrient=='S', 1, ifelse(Nutrient=='C', 2, 3)))
+
+ggplot(data=mstemsN, aes(x=Litter, y=mtot, fill=as.factor(Ntrt)))+
+  geom_bar(stat="identity", position=position_dodge())+
+  geom_errorbar(aes(ymin=mtot-se, ymax=mtot+se), width=0.1, position=position_dodge(0.9))+
+  #scale_fill_manual(name='Nutrient\nTreatment', values=c('orange', "orangered", 'orangered4'),labels=c("-N", ' C', '+N'))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  annotate("text", x=0.72, y=54, label="ABC", size=5)+
+  annotate('text', x=1, y=56, label="ABC", size=5)+
+  annotate("text", x=1.27, y=45, label="ABC", size=5)+
+  annotate("text", x=1.72, y=30, label="C", size=5)+
+  annotate("text", x=2, y=45, label="B", size=5)+
+  annotate("text", x=2.27, y=50, label="A", size=5)+
+  xlab('Burn Treatment')+
+  ylab('Number of A. gerardii Stems')
