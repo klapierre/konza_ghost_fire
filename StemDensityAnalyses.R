@@ -26,7 +26,7 @@ total=sd2 %>%
   group_by(Year, Watershed, Block, Plot, Litter, Nutrient, treatment, Burn) %>% 
   summarise(total=sum(stems))
 
-fit <- lmer(total ~  as.factor(Burn)*Litter*Nutrient*as.factor(Year) +(1|Watershed/Block), data = total)
+fit <- lmer(total ~  as.factor(Burn)*Litter*Nutrient*as.factor(Year) +(1|Watershed/Block), data = subset(total, Year!=2014))
 anova(fit, ddf='Kenward-Roger')
 
 emmeans(fit, pairwise~Litter|as.factor(Burn), adjust="holm")
@@ -101,6 +101,7 @@ ggplot(data=means14, aes(x=as.factor(Burn), y=Mtot, fill=as.factor(Burn)))+
 
 mstemsL<-total %>% 
   group_by(Burn, Litter) %>%
+  filter(Year!=2014) %>% 
   summarize(mtot=mean(total, na.rm=T), sddev=sd(total), n=length(total)) %>% 
   mutate(se=sddev/sqrt(n))
 
@@ -118,6 +119,7 @@ ggplot(data=mstemsL, aes(x=as.factor(Burn), y=mtot, fill=Litter))+
   ylab('Number of Stems') 
 
 mstemsN<-total %>% 
+  filter(Year!=2014) %>% 
   group_by(Burn, Nutrient) %>%
   summarize(mtot=mean(total, na.rm=T), sddev=sd(total), n=length(total)) %>% 
   mutate(se=sddev/sqrt(n)) %>% 
@@ -137,4 +139,63 @@ ggplot(data=mstemsN, aes(x=as.factor(Burn), y=mtot, fill=as.factor(Ntrt)))+
   annotate("text", x=2.27, y=155, label="B", size=5)+
   xlab('Burn Treatment')+
   ylab('Number of Stems') 
+
+
+###tracking Andro and Poa populations
+
+#Andro
+fit <- lmer(stems ~  as.factor(Burn)*Litter*Nutrient*as.factor(Year) +(1|Watershed/Block), data = subset(sd2, Year!=2014&spnum==2))
+anova(fit, ddf='Kenward-Roger')
+
+emmeans(fit, pairwise~as.factor(Burn)|Nutrient, adjust="holm")
+
+mstemsN<-sd2 %>% 
+  filter(Year!=2014, spnum==2) %>% 
+  group_by(Burn, Nutrient) %>%
+  summarize(mtot=mean(stems, na.rm=T), sddev=sd(stems), n=length(stems)) %>% 
+  mutate(se=sddev/sqrt(n)) %>% 
+  mutate(Ntrt=ifelse(Nutrient=='S', 1, ifelse(Nutrient=='C', 2, 3))) %>% 
+  mutate(BurnTrt=ifelse(Burn==1, "Annual", "Unburned"))
+
+ggplot(data=mstemsN, aes(x=BurnTrt, y=mtot, fill=as.factor(Ntrt)))+
+  geom_bar(stat="identity", position=position_dodge())+
+  geom_errorbar(aes(ymin=mtot-se, ymax=mtot+se), width=0.1, position=position_dodge(0.9))+
+  scale_fill_manual(name='Nutrient\nTreatment', values=c('orange', "orangered", 'orangered4'),labels=c("-N", ' C', '+N'))+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  annotate("text", x=0.72, y=54, label="ABC", size=5)+
+  annotate('text', x=1, y=56, label="ABC", size=5)+
+  annotate("text", x=1.27, y=45, label="ABC", size=5)+
+  annotate("text", x=1.72, y=30, label="C", size=5)+
+  annotate("text", x=2, y=45, label="B", size=5)+
+  annotate("text", x=2.27, y=50, label="A", size=5)+
+  xlab('Burn Treatment')+
+  ylab('Number of A. gerardii Stems')
+
+mstemsN<-sd2 %>% 
+  filter(Year!=2014, spnum==2) %>% 
+  group_by(Burn, Nutrient, Litter) %>%
+  summarize(mtot=mean(stems, na.rm=T), sddev=sd(stems), n=length(stems)) %>% 
+  mutate(se=sddev/sqrt(n)) %>% 
+  mutate(Ntrt=ifelse(Nutrient=='S', 1, ifelse(Nutrient=='C', 2, 3))) %>% 
+  mutate(BurnTrt=ifelse(Burn==1, "Annual", "Unburned"))
+
+ggplot(data=mstemsN, aes(x=Litter, y=mtot, fill=as.factor(Ntrt)))+
+  geom_bar(stat="identity", position=position_dodge())+
+  geom_errorbar(aes(ymin=mtot-se, ymax=mtot+se), width=0.1, position=position_dodge(0.9))+
+  scale_fill_manual(name='Nutrient\nTreatment', values=c('orange', "orangered", 'orangered4'),labels=c("-N", ' C', '+N'))+
+  scale_x_discrete(labels=c("Absent", "Present"))+
+  xlab('Light Treatment')+
+  ylab('Number of A. gerardii Stems')+
+  facet_wrap(~BurnTrt, ncol=1)
+
+
+#Schiz - model has problems
+fit <- lmer(stems ~  as.factor(Burn)*Litter*Nutrient*as.factor(Year) +(1|Watershed/Block), data = subset(sd2, Year!=2014&spnum==3))
+anova(fit, ddf='Kenward-Roger')
+
+#Poa - nothing happening here
+fit <- lmer(stems ~  Litter*Nutrient*as.factor(Year) +(1|Watershed/Block), data = subset(sd2, Year!=2014&spnum==17&Burn==20))
+anova(fit, ddf='Kenward-Roger')
+
+emmeans(fit, pairwise~Litter|as.factor(Burn), adjust="holm")
 
