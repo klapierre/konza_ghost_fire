@@ -72,4 +72,4 @@ ggplot(data=means, aes(x=Nutrient, y=Mlight, fill=Nutrient))+
   annotate("text", x=2, y=34, label="B", size=5)+
   annotate("text", x=3, y=31, label="C", size=5)+
   xlab('Nutrient Treatment')+
-  ylab("Pct. Light Reduction")
+  ylab("Pct. Light Infiltration")
