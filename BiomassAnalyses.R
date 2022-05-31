@@ -26,7 +26,7 @@ anpp2<-anpp %>%
 
 ###analysis of total biomass
 
-fit <- lmer(total ~  as.factor(BurnFreq)*Litter*Nutrient*as.factor(Year) +(1|Watershed/Block), data = anpp2)
+fit <- lmer(total ~  as.factor(BurnFreq)*Litter*Nutrient*as.factor(Year) +(1|Watershed/Block), data = filter(anpp2, Year!=2014))
 anova(fit,  ddf="Kenward-Roger")
 
 #doing contrasts 
@@ -102,6 +102,7 @@ ggplot(data=means14, aes(x=as.factor(BurnFreq), y=mtot, fill=as.factor(BurnFreq)
 
 ###there are interactive effects of year and burn trt, litter and nutrients
 meanN<-anpp2 %>% 
+  filter(Year!=2014) %>% 
   group_by(Nutrient) %>%
   summarize(Mtot=mean(total, na.rm=T), sddev=sd(total), n=length(total)) %>% 
   mutate(se=sddev/sqrt(n))
@@ -113,8 +114,8 @@ ggplot(data=meanN, aes(x=Nutrient, y=Mtot, fill=Nutrient))+
   scale_fill_manual(values=c("orangered", "orange", 'orangered4'))+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position="none")+
   annotate("text", x=1, y=450, label="C", size=5)+
-  annotate("text", x=2, y=550, label="B", size=5)+
-  annotate("text", x=3, y=600, label="A", size=5)+
+  annotate("text", x=2, y=575, label="B", size=5)+
+  annotate("text", x=3, y=650, label="A", size=5)+
   xlab('Nutrient Treatment')+
   ylab('ANPP')
 
