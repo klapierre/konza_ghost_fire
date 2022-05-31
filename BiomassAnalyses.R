@@ -33,12 +33,12 @@ anova(fit,  ddf="Kenward-Roger")
 emmeans(fit, pairwise~Nutrient, adjust="holm")
 
 ###analysis annual burn only
-fit1 <- lmer(total ~  Litter*Nutrient*as.factor(Year) +(1|Watershed/Block), data = subset(anpp2, BurnFreq==1))
-anova(fit1)
+fit1 <- lmer(total ~  Litter*Nutrient*as.factor(Year) +(1|Watershed/Block), data = subset(anpp2, BurnFreq==1&Year!=2014))
+anova(fit1, ddf="Kenward-Roger")
 
 ###analysis of unburned only
-fit20 <- lmer(total ~  Litter*Nutrient*as.factor(Year) +(1|Watershed/Block), data = subset(anpp2, BurnFreq==20))
-anova(fit20)
+fit20 <- lmer(total ~  Litter*Nutrient*as.factor(Year) +(1|Watershed/Block), data = subset(anpp2, BurnFreq==20&Year!=2014))
+anova(fit20, ddf="Kenward-Roger")
 
 ##################
 ########Doing the analysis of how to make annual to unburned and vice-versa
