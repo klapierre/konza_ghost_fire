@@ -27,7 +27,7 @@ richeven<-community_structure(sp2, time.var="Year", replicate.var = "plot_id", a
 ###analysis richness
 ######################################
 
-fit <- lmer(richness ~  Burn.Trt*Litter*Nutrient*as.factor(Year) +(1|Watershed/Block), data = richeven)
+fit <- lmer(richness ~  Burn.Trt*Litter*Nutrient*as.factor(Year) +(1|Watershed/Block), data = subset(richeven, Year!=2014))
 anova(fit, ddf="Kenward-Roger")
 
 emmeans(fit, pairwise~Burn.Trt*Litter, adjust="holm")
@@ -79,11 +79,11 @@ ggplot(data=subset(means, treatment!="drop"&treatment!="Annual+N+L"&treatment!="
 r14<-richeven %>% 
   filter(Year==2014)
 
-#no difference in # stems btwn burn trts
+#no difference in # stems richness burn trts
 fit14 <- lmer(richness ~  Burn.Trt2 +(1|Watershed/Block), data = r14)
 anova(fit14)
 
-#there is a difference in stems by watershed
+#there is a difference in richness by watershed
 summary(aov(richness~Watershed, data=r14))
 
 means14<-r14 %>% 
@@ -105,6 +105,7 @@ ggplot(data=means14, aes(x=Burn.Trt, y=mrich, fill=Burn.Trt))+
 
 richMLit<-richeven %>% 
   rename(Burn=Burn.Trt) %>% 
+  filter(Year!=2014) %>% 
   group_by(Burn, Litter) %>%
   summarize(mrich=mean(richness, na.rm=T), sddev=sd(richness), n=length(richness)) %>% 
   mutate(se=sddev/sqrt(n))
@@ -116,12 +117,13 @@ ggplot(data=richMLit, aes(x=Burn, y=mrich, fill=Litter))+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
   annotate("text", x=0.75, y=13, label="C", size=5)+
   annotate("text", x=1.25, y=12, label="D", size=5)+
-  annotate("text", x=1.75, y=16, label="A", size=5)+
+  annotate("text", x=1.75, y=17, label="A", size=5)+
   annotate("text", x=2.25, y=14, label="B", size=5)+
   xlab('Burn Treatment')+
   ylab('Species Richness')  
 
 richMN<-richeven %>% 
+  filter(Year!=2014) %>% 
   group_by(Nutrient) %>%
   summarize(mrich=mean(richness, na.rm=T), sddev=sd(richness), n=length(richness)) %>% 
   mutate(se=sddev/sqrt(n))
@@ -142,10 +144,10 @@ ggplot(data=richMN, aes(x=Nutrient, y=mrich, fill=Nutrient))+
 ##Evenness
 ############################
 
-fit <- lmer(Evar ~  Burn.Trt*Litter*Nutrient*as.factor(Year) +(1|Watershed/Block), data = richeven)
+fit <- lmer(Evar ~  Burn.Trt*Litter*Nutrient*as.factor(Year) +(1|Watershed/Block), data = subset(richeven, Year!=2014))
 anova(fit, ddf="Kenward-Roger")
 emmeans(fit, pairwise~Litter, adjust="holm")
-emmeans(fit, pairwise~Nutrient, adjust="holm")
+emmeans(fit, pairwise~Nutrient*Burn.Trt, adjust="holm")
 
 
 ###analysis annual burn only
@@ -237,20 +239,24 @@ ggplot(data=evenMLit, aes(x=Litter, y=meven, fill=Litter))+
   ylab('Species Evenness') 
 
 evenMN<-richeven %>% 
-  group_by(Nutrient) %>%
+  filter(Year!=2014) %>% 
+  group_by(Nutrient, Burn.Trt) %>%
   summarize(meven=mean(Evar, na.rm=T), sddev=sd(Evar), n=length(Evar)) %>% 
-  mutate(se=sddev/sqrt(n))
+  mutate(se=sddev/sqrt(n)) %>% 
+  mutate(nut=ifelse(Nutrient=="S", 1, ifelse(Nutrient=="C", 2, 3)))
 
-ggplot(data=evenMN, aes(x=Nutrient, y=meven, fill=Nutrient))+
-  geom_bar(stat="identity")+
+ggplot(data=evenMN, aes(x=Burn.Trt, y=meven, fill=as.factor(nut)))+
+  geom_bar(stat="identity", position=position_dodge())+
   geom_errorbar(aes(ymin=meven-se, ymax=meven+se), width=0.1, position=position_dodge(0.9))+
-  scale_fill_manual(values=c("orangered", "orange", 'orangered4'))+
-  scale_x_discrete(limits=c("S", 'C', 'U'), labels=c("-N", 'C','+N'))+
+  scale_fill_manual(values=c("orangered", "orange", 'orangered4'), labels=c("-N", "C", "+N"))+
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = 'none')+
-  annotate("text", x=1, y=.4, label="A", size=5)+
-  annotate("text", x=2, y=.4, label="A", size=5)+
-  annotate("text", x=3, y=.35, label="B", size=5)+
-  xlab('Nutrient Treatment')+
+  annotate("text", x=0.72, y=.35, label="B", size=5)+
+  annotate('text', x=1, y=.38, label="A", size=5)+
+  annotate("text", x=1.27, y=.34, label="B", size=5)+
+  annotate("text", x=1.72, y=.42, label="A", size=5)+
+  annotate("text", x=2, y=.41, label="A", size=5)+
+  annotate("text", x=2.27, y=.39, label="B", size=5)+
+  xlab('Burn Treatment')+
   ylab('Species Evenness') 
 
 
