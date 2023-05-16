@@ -22,18 +22,33 @@ DPM2016<-read.csv("GhostFire2016_Data/DiscPasture/GhostFire_Disc Pasture_2016.cs
   group_by(Year, Wateshed, Plot, Rep) %>% 
   summarise(meanheight=mean(height, na.rm=T))%>%
   filter(Year!="NA")
+#No 2017 DPM Data
 DPM2018<-read.csv("GhostFire2018_Data/DiscPasture/GhostFire_Disc Pasture_2018.csv")%>%
   gather(quad, height, Quad.A:Quad.D)%>%
   group_by(Year, Wateshed, Plot, Rep) %>% 
   summarise(meanheight=mean(height, na.rm=T))%>%
   filter(Year!="NA")
+#No 2019 DPM Data
+#No 2020 DPM Data
+DPM2021<-read.csv("GhostFire2021_Data/DiscPasture/enterred/GhostFire_Disc Pasture_2021.csv")%>%
+  gather(quad, height, Quad.A:Quad.D)%>%
+  group_by(Year, Wateshed, Plot, Rep) %>% 
+  summarise(meanheight=mean(height, na.rm=T))%>%
+  filter(Year!="NA")
+DPM2022<-read.csv("GhostFire2022_Data/DiscPasture/GhostFire_Disc Pasture_2022.csv")%>%
+  mutate(Rep=1) %>% 
+  gather(quad, height, Quad.A:Quad.D)%>%
+  group_by(Year, Wateshed, Plot, Rep) %>% 
+  summarise(meanheight=mean(height, na.rm=T))%>%
+  filter(Year!="NA")
+
 
 #merge all years of DPM together with column names Year, Wateshed, Plot, Rep, meanheight
 #not watershe is spelled wrong
 #removed Rep because they were all a 1? Not sure what this column meant
-DPM_AllYears<-bind_rows(DPM2015, DPM2016, DPM2018)%>%
+DPM_AllYears<-bind_rows(DPM2015, DPM2016, DPM2018, DPM2021, DPM2022)%>%
   select(-Rep)
-#write.csv(DPM_AllYears, "DPM_2015_2016_2018.csv", row.names = F)
+write.csv(DPM_AllYears, "Compiled data/DPM_2015_2022.csv", row.names = F)
 
 ######################################################################################
 ######################################################################################
@@ -92,6 +107,7 @@ Light2016<-read.csv("GhostFire2016_Data/Light/GhostFire_Light_June2016.csv")%>%
   mutate(LitterCanopyEffect=((meanBelowLitter/Above)*100), CanopyEffect=((meanBelow/Above)*100))%>%
   mutate(Season="Early")%>%
   mutate(BurnFreq=as.factor(BurnFreq))
+#We have 2016 light for middle and late season too, but this is JUST early season
 
 Light2017<-read.csv("GhostFire2017_Data/Light/GhostFire_Light_May2017.csv")%>%
   select(-B_Average, -Light, -AboveLitter_Average)%>%
@@ -120,12 +136,25 @@ Light2019<-read.csv("GhostFire2019_Data/Light/GhostFire_Light_2019.csv")%>%
   select(-Month)
 #str(Light2018)
 
+#No Light2020
+#No Light2021 but Sally should look for it in raw data sheets
+
+Light2022<-read.csv("GhostFire2022_Data/Light/GhostFire_Light_2022.csv")%>%
+  group_by(Year, BurnFreq, Watershed, Block, Plot, Above) %>% 
+  mutate(meanBelowLitter=mean(c(Below.Litter.1, Below.Litter.2), na.rm=T), meanBelow=mean(c(Above.Litter.1, Above.Litter.2), na.rm=T))%>%
+  select(-Below.Litter.1, -Below.Litter.2, -Above.Litter.1, -Above.Litter.2, -X) %>% 
+  mutate(LitterCanopyEffect=((meanBelowLitter/Above)*100), CanopyEffect=((meanBelow/Above)*100))%>%
+  mutate(Season="Early")%>%
+  mutate(BurnFreq=as.factor(BurnFreq))%>%
+  select(-Month)
+
+
 #merge all years of Light together with column names Year, BurnFreq, Watershed, Block, Plot, Above, meanBelowLitter, meanBelow, LitterCanopyEffect, CanopyEffect
 #note watershes is spelled correct here
 #note 2014 has both early and late season data
 
-Light_AllYears<-bind_rows(Light2014Early, Light2014Late, Light2015, Light2016, Light2017, Light2018, Light2019)
-write.csv(Light_AllYears, "Compiled data\\Light_2014_2019.csv", row.names = F)
+Light_AllYears<-bind_rows(Light2014Early, Light2014Late, Light2015, Light2016, Light2017, Light2018, Light2019, Light2022)
+write.csv(Light_AllYears, "Compiled data/Light_2014_2022.csv", row.names = F)
 
 
 ######################################################################################
@@ -170,10 +199,28 @@ SC2019<-read.csv("GhostFire2019_Data/SpeciesComp/GhostFire_SpComp_2019.csv",file
   gather(Season, cover, June:August)%>%
   filter(cover!=0)
 
+#No SC2020
+
+SC2021<-read.csv("GhostFire2021_Data/SpeciesComp/GhostFire_SpComp_2021.csv",fileEncoding="UTF-8-BOM")%>%
+  select(-Experiment, -Site, -Comments) %>% 
+  filter(spnum!="litter") %>%# there was a lot of litter in 2019
+  mutate(spnum=as.integer(spnum)) %>% 
+  group_by(Year, Burn.Trt, Block, Plot, spnum) %>% 
+  gather(Season, cover, June:August)%>%
+  filter(cover!=0)
+
+SC2022<-read.csv("GhostFire2022_Data/SpeciesComp/GhostFire_SpComp_2022.csv",fileEncoding="UTF-8-BOM")%>%
+  select(-Experiment, -Site, -Comments) %>% 
+  filter(spnum!="litter") %>%# there was a lot of litter in 2019
+  mutate(spnum=as.integer(spnum)) %>% 
+  group_by(Year, Burn.Trt, Block, Plot, spnum) %>% 
+  gather(Season, cover, June:August)%>%
+  filter(cover!=0)
+
 #merge all years of SpComp together with column names Year, Burn.Trt, Block, Plot, spnum, Species, Season, cover
 #Now also getting the max cover at this dataset.
 
-SpComp_AllYears<-bind_rows(SC2014, SC2015, SC2016, SC2017, SC2018, SC2019) %>% 
+SpComp_AllYears<-bind_rows(SC2014, SC2015, SC2016, SC2017, SC2018, SC2019, SC2021, SC2022) %>% 
   ungroup() %>% 
   select(-Watershed, -Species) %>% 
   group_by(Year, Burn.Trt, Block, Plot, spnum) %>% 
@@ -186,7 +233,8 @@ SpComp_AllYears2<-SpComp_AllYears %>%
 ### Check to make sure species names, numbers, and cleaned names match up. 
 #SK checked 2014-2018 and found multiple errors (>15)
 #SK cleaned sp comp and sp list through 2018 on May 21, 2019
-write.csv(SpComp_AllYears2, "Compiled data\\SpComp_2014-2019.csv", row.names = F)
+
+write.csv(SpComp_AllYears2, "Compiled data/SpComp_2014-2022.csv", row.names = F)
 
 
 
@@ -197,7 +245,7 @@ write.csv(SpComp_AllYears2, "Compiled data\\SpComp_2014-2019.csv", row.names = F
 ######################################################################################
 ####import all Stem Density data
 SD2014<-read.csv("GhostFire2014_Data/Stem Density/GhostFire_SpringStemD_2014.csv")%>%
-  rename(Year=ï..Year)%>%
+  #rename(Year=ï..Year)%>%
   group_by(Year, Burn, Watershed, Block, spnum, Species) %>% 
   gather(Plot, stems, p_1:p_6)%>%
   separate(Plot, into=c("letter", "plot"), sep="_")%>%
@@ -212,42 +260,55 @@ SD2014<-read.csv("GhostFire2014_Data/Stem Density/GhostFire_SpringStemD_2014.csv
 
 
 SD2015<-read.csv("GhostFire2015_Data/StemDensity/GhostFire_SpringStemD_2015.csv")%>%
-  select(-ï..Format.ID) %>% 
+  select(-Format.ID) %>% 
   group_by(Year, Burn, Watershed, Block, spnum, Species) %>% 
   gather(Plot, stems, p1:p6)%>%
   filter(stems!=0) %>% 
   filter(Year!="NA")
 SD2016<-read.csv("GhostFire2016_Data/StemDensity/GhostFire_SpringStemD_2016_v2.csv")%>%
-  select(-ï..Format.ID) %>% 
+  select(-Format.ID) %>% 
   group_by(Year, Burn, Watershed, Block, spnum, Species) %>% 
   gather(Plot, stems, p1:p6)%>%
   filter(stems!=0)%>% 
   filter(Year!="NA")
 SD2017<-read.csv("GhostFire2017_Data/StemDensity/GhostFire_SpringStemD_2017.csv")%>%
-  select(-ï..Format.ID) %>% 
+  select(-Format.ID) %>% 
   group_by(Year, Burn, Watershed, Block, spnum, Species) %>% 
   gather(Plot, stems, p1:p6)%>%
   filter(stems!=0)%>% 
   filter(Year!="NA")
 SD2018<-read.csv("GhostFire2018_Data/StemDensity/GhostFire_SpringStemD_2018.csv")%>%
-  select(-ï..Format.ID) %>% 
+  select(-Format.ID) %>% 
   group_by(Year, Burn, Watershed, Block, spnum, Species) %>% 
   gather(Plot, stems, p1:p6)%>%
   filter(stems!=0)%>% 
   filter(Year!="NA")
 SD2019<-read.csv("GhostFire2019_Data/StemDensity/GhostFire_SpringStemD_2019.csv")%>%
-  select(-ï..Format.ID, -X, -X.1, -X.2, -X.3, -X.4, -X.5, -X.6, -X.7, -X.8, -X.9, -X.10, -X.11, -X.12) %>% 
+  select(-Format.ID, -X, -X.1, -X.2, -X.3, -X.4, -X.5, -X.6, -X.7, -X.8, -X.9, -X.10, -X.11, -X.12) %>% 
+  group_by(Year, Burn, Watershed, Block, spnum, Species) %>% 
+  gather(Plot, stems, p1:p6)%>%
+  filter(stems!=0)%>% 
+  filter(Year!="NA")
+#No SD2020
+SD2021<-read.csv("GhostFire2021_Data/StemDensity/GhostFire_SpringStemD_2021.csv", fileEncoding="UTF-8-BOM")%>%
+  select(-Format.ID, -X, -X.1, -X.2, -X.3, -X.4, -X.5, -X.6, -X.7, -X.8, -X.9, -X.10, -X.11, -X.12) %>% 
+  group_by(Year, Burn, Watershed, Block, spnum, Species) %>% 
+  gather(Plot, stems, p1:p6)%>%
+  filter(stems!=0)%>% 
+  filter(Year!="NA")
+SD2022<-read.csv("GhostFire2022_Data/StemDensity/GhostFire_SpringStemD_2022.csv", fileEncoding="UTF-8-BOM")%>%
+  select(-Format.ID) %>% 
   group_by(Year, Burn, Watershed, Block, spnum, Species) %>% 
   gather(Plot, stems, p1:p6)%>%
   filter(stems!=0)%>% 
   filter(Year!="NA")
 
+
 #merge all years of StemDensity together with column names Year, Burn, Watershed, Block, Plot, spnum, Species, stems
 
-StemDensity_AllYears<-bind_rows(SD2014, SD2015, SD2016, SD2017, SD2018, SD2019)
+StemDensity_AllYears<-bind_rows(SD2014, SD2015, SD2016, SD2017, SD2018, SD2019, SD2021, SD2022)
 # bring in sp list
-SpList<-read.csv("GhostFire_Konza_spplist.csv") %>% 
-  rename(spnum=ï..spnum)
+SpList<-read.csv("GhostFire_Konza_spplist.csv")
 
 StemDensity_AllYears2<-StemDensity_AllYears %>% 
   right_join(SpList) %>% 
@@ -255,7 +316,7 @@ StemDensity_AllYears2<-StemDensity_AllYears %>%
 ### Check to make sure species names, numbers, and cleaned names match up. 
 #SK checked 2014-2018 and found multiple errors (>15)
 #SK cleaned sp comp and sp list through 2018 on May 21, 2019
-write.csv(StemDensity_AllYears2, "Compiled Data/StemDensity_2014-2019.csv", row.names = F)
+write.csv(StemDensity_AllYears2, "Compiled Data/StemDensity_2014-2022.csv", row.names = F)
 
 
 ######################################################################################
@@ -267,44 +328,58 @@ ANPP2014<-read.csv("GhostFire2014_Data/Biomass/GhostFire_Biomass_2014.csv")%>%
   mutate_at(c(7:10), ~replace(., is.na(.), 0))%>%
   rename(Burn=BurnFreq)%>%
   mutate(BurnFreq=ifelse(Burn=="Annual", 1, 20)) %>% 
-  select(-Burn) %>% 
-  rename(Year=ï..Year)
+  select(-Burn) 
 
 ANPP2015<-read.csv("GhostFire2015_Data/Biomass/GhostFire_Biomass_2015.csv")%>%
   select(-Notes)%>%
   separate(Plot, c("Block", "Plot"), sep=1) %>% 
   mutate_at(c(7:10), ~replace(., is.na(.), 0)) %>% 
-  mutate(Plot=as.integer(Plot))%>% 
-  rename(Year=ï..Year)
+  mutate(Plot=as.integer(Plot))
 
 ANPP2016<-read.csv("GhostFire2016_Data/Biomass/GhostFire_Biomass_2016_formatted.csv")%>%
   select(-Notes)%>%
   separate(Plot, c("Block", "Plot"), sep=1) %>% 
   mutate_at(c(7:10), ~replace(., is.na(.), 0)) %>% 
-  mutate(Plot=as.integer(Plot))%>% 
-  rename(Year=ï..Year)
+  mutate(Plot=as.integer(Plot))
 
+#No ANPP2017 but still hoping Kevin finds it
 #ANPP2017<-read.csv("GhostFire2016_Data/Biomass/GhostFire_Biomass_2016_formatted.csv")%>%
-  select(-Notes)%>%
-  separate(Plot, c("Block", "Plot"), sep=1) %>% 
-  mutate_at(c(7:10), ~replace(., is.na(.), 0)) %>% 
-  mutate(Plot=as.integer(Plot))%>% 
-    rename(Year=ï..Year)
+ # select(-Notes)%>%
+ # separate(Plot, c("Block", "Plot"), sep=1) %>% 
+ # mutate_at(c(7:10), ~replace(., is.na(.), 0)) %>% 
+ # mutate(Plot=as.integer(Plot))%>% 
+ #   rename(Year=ï..Year)
   
 ANPP2018<-read.csv("GhostFire2018_Data/Biomass/GhostFire_Biomass_2018.csv")%>%
   na.omit() %>% 
-    mutate(Plot=as.integer(Plot))%>% 
-  rename(Year=ï..Year)
+    mutate(Plot=as.integer(Plot))
 
 ANPP2019<-read.csv("GhostFire2019_Data/Biomass/GhostFire_Biomass_DataEntry2019.csv")%>%
-    select(-Notes, -ï..WhoWeighed, -DateWeighed)%>%
+    select(-Notes, -WhoWeighed, -DateWeighed)%>%
     separate(Plot, c("Block", "Plot"), sep=1) %>% 
     mutate_at(c(7:10), ~replace(., is.na(.), 0)) %>% 
     mutate(Plot=as.integer(Plot)) %>% 
   rename(Watershed=Wateshed)
 
+ANPP2020<-read.csv("GhostFire2020_Data/Biomass/GhostFire_Biomass_2020.csv", fileEncoding="UTF-8-BOM")%>%
+  select(-Notes)%>%
+  separate(Plot, c("Block", "Plot"), sep=1) %>% 
+  mutate_at(c(7:10), ~replace(., is.na(.), 0)) %>% 
+  mutate(Plot=as.integer(Plot)) %>% 
+  rename(Watershed=Wateshed)
+
+ANPP2021<-read.csv("GhostFire2021_Data/Biomass/GhostFire_Biomass_Data_2021.csv", fileEncoding="UTF-8-BOM")%>%
+  select(-Notes)%>%
+  separate(Plot, c("Block", "Plot"), sep=1) %>% 
+  mutate_at(c(7:10), ~replace(., is.na(.), 0)) %>% 
+  mutate(Plot=as.integer(Plot)) %>% 
+  rename(Watershed=Wateshed)
+
+
+
+
 #merge all years of ANPP together with column names Year, BurnFreq, Watershed, Block, Plot, Replicate, Grass, Forb, Woody, P.Dead Species, stems
-ANPP_AllYears<-bind_rows(ANPP2014, ANPP2015, ANPP2016, ANPP2018, ANPP2019) %>% 
+ANPP_AllYears<-bind_rows(ANPP2014, ANPP2015, ANPP2016, ANPP2018, ANPP2019, ANPP2020, ANPP2021) %>% 
   group_by(Year, BurnFreq, Watershed, Block, Plot) %>% 
   summarize_all(mean) %>% 
   select(-Replicate, -P.Dead) %>% 
@@ -312,5 +387,5 @@ ANPP_AllYears<-bind_rows(ANPP2014, ANPP2015, ANPP2016, ANPP2018, ANPP2019) %>%
   group_by(Year, BurnFreq, Watershed, Block, Plot) %>% 
   summarise(total=sum(Biomass)*10)
   
-write.csv(ANPP_AllYears, "Compiled Data/ANPP_2014-2019.csv", row.names = F)
+write.csv(ANPP_AllYears, "Compiled Data/ANPP_2014-2021.csv", row.names = F)
 
