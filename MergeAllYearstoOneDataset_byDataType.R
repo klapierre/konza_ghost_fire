@@ -376,7 +376,12 @@ ANPP2021<-read.csv("GhostFire2021_Data/Biomass/GhostFire_Biomass_Data_2021.csv",
   rename(Watershed=Wateshed)
 
 
-
+#merge all years of ANPP together with column names Year, BurnFreq, Watershed, Block, Plot, Replicate, Grass, Forb, Woody, P.Dead Species, stems
+ANPP_AllYears<-bind_rows(ANPP2014, ANPP2015, ANPP2016, ANPP2018, ANPP2019, ANPP2020, ANPP2021) %>% 
+  group_by(Year, BurnFreq, Watershed, Block, Plot) %>% 
+  summarize_all(mean) %>% 
+  select(-Replicate) 
+write.csv(ANPP_AllYears, "Compiled Data/ANPP_2014-2021_GFPW.csv", row.names = F)
 
 #merge all years of ANPP together with column names Year, BurnFreq, Watershed, Block, Plot, Replicate, Grass, Forb, Woody, P.Dead Species, stems
 ANPP_AllYears<-bind_rows(ANPP2014, ANPP2015, ANPP2016, ANPP2018, ANPP2019, ANPP2020, ANPP2021) %>% 
@@ -387,5 +392,5 @@ ANPP_AllYears<-bind_rows(ANPP2014, ANPP2015, ANPP2016, ANPP2018, ANPP2019, ANPP2
   group_by(Year, BurnFreq, Watershed, Block, Plot) %>% 
   summarise(total=sum(Biomass)*10)
   
-write.csv(ANPP_AllYears, "Compiled Data/ANPP_2014-2021.csv", row.names = F)
+write.csv(ANPP_AllYears, "Compiled Data/ANPP_2014-2021_TotalOnly.csv", row.names = F)
 
