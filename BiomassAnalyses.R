@@ -22,7 +22,7 @@ theme_set(theme_bw(20))
 ###
 ### Read in, clean, and combine all years of ANPP data
 ###
-
+{
 ### NOTE: I STILL NEED TO GO THROUGH AND CLEAN EACH YEAR OF DATA BEFORE COMBINING TO GET PLOT MEANS
 anpp_14_21 <- read.csv("Compiled data\\ANPP_2014-2021_GFPW.CSV") %>% 
 #  rename(plot=Plot) %>% 
@@ -96,8 +96,6 @@ anpp_24 <- read.csv("GhostFire2024_Data\\Biomass\\GhostFire_ANPP_2024.csv") %>%
   )
 
 
-
-
 ### Combine all years together
 anpp_14_24 <- anpp_14_21 %>% 
   bind_rows(
@@ -140,17 +138,62 @@ ggplot(anpp_14_24, aes(x=P.Dead))+
   geom_histogram()+
   facet_wrap(~Year)
 
-### Left off here
-trt_key<-read.csv("GF_PlotList_Trts.csv") %>% 
+### Read in treatment key
+trt_key<-read.csv("GF_PlotList.csv") %>% 
   select(-plot_id) %>% 
   rename(BurnFreq=Burn.Trt2)%>%
   select(-Burn.Trt) 
 
-anpp2<-anpp %>% 
-  left_join(trts)
 
-###analysis of total biomass
+anpp_14_24_full <- anpp_14_24 %>%
+  dplyr::select(-BurnFreq) %>%
+  rename(plot=Plot) %>%
+  full_join(trt_key, by=c("Watershed", "Block", "plot")) %>%
+  mutate(
+    anpp_wwoody = (Grass+Forb+Woody)*10,
+    anpp_nowoody = (Grass+Forb)*10
+  ) %>%
+  rename(FireFreq = Burn.Trt)
+  }      
 
+###
+### Running models
+###
+{
+  library(nmle)
+  library(lmerTest)
+  
+  ### Full model (e.g. Year*Litter*Nutrient*FireFreq was overparameterized... so I just did all the 2 way interactions here... we could try to back this up with some AIC model selection or something)
+  anpp_model_full <- lme(log(anpp_wwoody) ~ as.factor(Year)*Litter + as.factor(Year)*Nutrient + as.factor(Year)*FireFreq + Litter*Nutrient + Litter*FireFreq + Nutrient*FireFreq
+                       , data=filter(anpp_14_24_full, Year %in% 2014:2024)
+                       , random = ~1 |Watershed/Block/plot
+                       , correlation=corAR1(form = ~1 |Watershed/Block/plot)
+                       , control=lmeControl(returnObject=TRUE)
+                       , na.action = na.omit)
+
+  anova.lme(anpp_model_full, type="marginal")
+  summary(anpp_model_full)
+
+  plot(anpp_model_full, type=c("p","smooth"), col.line=1)
+  qqnorm(anpp_model_full, abline = c(0,1)) ## qqplot
+  hist(log(filter(anpp_14_24_full, Year %in% 2014:2024)$anpp_wwoody))
+  
+  emmeans_litter_year <- emmeans(anpp_model_full, "Litter", by="Year")
+  pairs(emmeans_litter_year)  
+  emmeans_nutrient_year <- emmeans(anpp_model_full, "Nutrient", by="Year")
+  pairs(emmeans_nutrient_year)  
+
+  
+  
+  
+}
+  
+  lme(lnrr_npp ~ as.factor(Year)*Drought+as.factor(Year)*Grazing+Drought*Grazing
+                            , data=filter(npp_rr, Year %in% 2019:2023 & Site=="FK" & npp_type=="BNPP")
+                            , random = ~1 |Block/Paddock/Plot
+                            , correlation=corAR1(form = ~1 |Block/Paddock/Plot)
+                            , control=lmeControl(returnObject=TRUE)
+                            , na.action = na.omit)
 fit <- lmer(total ~  as.factor(BurnFreq)*Litter*Nutrient*as.factor(Year) +(1|Watershed/Block), data = filter(anpp2, Year!=2014))
 anova(fit,  ddf="Kenward-Roger")
 
