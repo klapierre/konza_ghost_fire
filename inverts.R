@@ -1,6 +1,6 @@
 ################################################################################
-##  inverts.R: Community diversity metrics and composition for invertebrates in the
-##             Konza Prairie LTER Ghost Fire experiment.
+##  inverts.R: Community diversity metrics and composition for invertebrates in 
+##             the Konza Prairie LTER Ghost Fire experiment.
 ##
 ##  Authors: K. Komatsu
 ##  Date created: Sept 106, 2025
@@ -8,12 +8,15 @@
 
 library(codyn)
 library(vegan)
+library(nlme)
+library(lmerTest)
+library(emmeans)
 library(gridExtra)
 library(tidyverse)
 
 setwd('C:\\Users\\kjkomatsu\\Smithsonian Dropbox\\Kimberly Komatsu\\konza projects\\Ghost Fire')
 
-# functions ---------------------------------------------------------------
+# functions --------------------------------------------------------------------
 # bar graph summary statistics
 # barGraphStats(data=, variable="", byFactorNames=c(""))
 
@@ -34,7 +37,7 @@ barGraphStats <- function(data, variable, byFactorNames) {
   return(finalSummaryStats)
 }  
 
-# graph theme set ---------------------------------------------------------------
+# graph theme set --------------------------------------------------------------
 theme_set(theme_bw())
 theme_update(axis.title.x=element_text(size=20, vjust=-0.35, margin=margin(t=15)), axis.text.x=element_text(size=16),
              axis.title.y=element_text(size=20, angle=90, vjust=0.5, margin=margin(r=15)), axis.text.y=element_text(size=16),
@@ -43,7 +46,11 @@ theme_update(axis.title.x=element_text(size=20, vjust=-0.35, margin=margin(t=15)
              legend.title=element_text(size=20), legend.text=element_text(size=20))
 
 
-# data ---------------------------------------------------------------
+#contrasts ---------------------------------------------------------------------
+options(contrasts = c("contr.sum", "contr.poly"))
+
+
+# data -------------------------------------------------------------------------
 
 trt <- read.csv('SiteLocation & Exp Design\\GF_PlotList.csv') %>% 
   select(-Plot, -Burn.Trt2, -plot_id) %>% 
@@ -63,22 +70,26 @@ invertComp <- rbind(invertComp2014, invertComp2019, invertComp2024) %>%
   summarise(total_count = sum(count), .groups='drop') #sum across counts of nymphs/adults and collected/observed
 
 
-# calculate overall metrics ---------------------------------------------------------------
+# calculate overall metrics ----------------------------------------------------
 
 invertAbund <- invertComp %>% 
   group_by(year, watershed, replicate, block, plot, burn_trt, litter, nutrient) %>% 
   summarize(abundance=sum(total_count), .groups='drop')
 
 invertMetrics <- community_structure(df=invertComp, time.var='year', abundance.var='total_count', replicate.var='replicate') %>% 
-  left_join(invertAbund)
+  left_join(invertAbund) %>% 
+  mutate(ln_abund=log(abundance))
 
 invertMetrics$nutrient <- factor(invertMetrics$nutrient, levels=c('S','C','U'))
 invertMetrics$litter <- factor(invertMetrics$litter, levels=c('P','A'))
 invertMetrics$burn_trt <- factor(invertMetrics$burn_trt, levels=c('Annual','Unburned'))
 
+hist(invertMetrics$richness)
+hist(invertMetrics$Evar)
+hist(invertMetrics$abundance)
+hist(log(invertMetrics$abundance))
 
-
-# pre-treatment figures ---------------------------------------------------------------
+# pre-treatment figures --------------------------------------------------------
 
 richnessFig <- ggplot(barGraphStats(data=subset(invertMetrics, year==2014), variable="richness", byFactorNames=c("burn_trt")), 
                       aes(x=burn_trt, y=mean, fill=burn_trt)) +
@@ -96,7 +107,7 @@ evennessFig <- ggplot(barGraphStats(data=subset(invertMetrics, year==2014), vari
   xlab('Burn') + ylab('Invertebrate Evenness') +
   theme(legend.position='none')
 
-abundanceFig <- ggplot(barGraphStats(data=subset(invertMetrics, year==2014), variable="richness", byFactorNames=c("burn_trt")), 
+abundanceFig <- ggplot(barGraphStats(data=subset(invertMetrics, year==2014), variable="abundance", byFactorNames=c("burn_trt")), 
                        aes(x=burn_trt, y=mean, fill=burn_trt)) +
   geom_bar(stat='identity') +
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=0.2) +
@@ -109,7 +120,41 @@ grid.arrange(nrow=1, ncol=3,
 #export at 1000x500
 
 
-# treatment year figures ---------------------------------------------------------------
+# pre-trt models ---------------------------------------------------------------
+
+pretrtRichness <- lme(richness ~ burn_trt,
+                      data=subset(invertMetrics, year==2014),
+                      random = ~1 |watershed/block/plot,
+                      na.action = na.omit)
+anova.lme(pretrtRichness, type="marginal")
+summary(pretrtRichness)
+plot(pretrtRichness, type=c("p","smooth"), col.line=1)
+qqnorm(pretrtRichness, abline = c(0,1))
+hist(subset(invertMetrics, year==2014)$richness)
+
+pretrtEvenness <- lme(Evar ~ burn_trt,
+                      data=subset(invertMetrics, year==2014),
+                      random = ~1 |watershed/block/plot,
+                      na.action = na.omit)
+anova.lme(pretrtEvenness, type="marginal")
+summary(pretrtEvenness)
+plot(pretrtEvenness, type=c("p","smooth"), col.line=1)
+qqnorm(pretrtEvenness, abline = c(0,1))
+hist(subset(invertMetrics, year==2014)$Evar)
+
+pretrtAbundance <- lme(sqrt(abundance) ~ burn_trt,
+                      data=subset(invertMetrics, year==2014),
+                      random = ~1 |watershed/block/plot,
+                      na.action = na.omit)
+anova.lme(pretrtAbundance, type="marginal")
+summary(pretrtAbundance)
+plot(pretrtAbundance, type=c("p","smooth"), col.line=1)
+qqnorm(pretrtAbundance, abline = c(0,1))
+hist(sqrt(subset(invertMetrics, year==2014)$abundance))
+
+
+
+# treatment year figures -------------------------------------------------------
 
 richnessFig <- ggplot(barGraphStats(data=subset(invertMetrics, year!=2014), variable="richness", byFactorNames=c("nutrient","litter","burn_trt")), 
                       aes(x=interaction(nutrient, litter), y=mean, fill=nutrient)) +
@@ -129,7 +174,7 @@ evennessFig <- ggplot(barGraphStats(data=subset(invertMetrics, year!=2014), vari
   xlab('Treatment') + ylab('Invertebrate Evenness') +
   facet_wrap(~burn_trt)
 
-abundanceFig <- ggplot(barGraphStats(data=subset(invertMetrics, year!=2014), variable="richness", byFactorNames=c("nutrient","litter","burn_trt")), 
+abundanceFig <- ggplot(barGraphStats(data=subset(invertMetrics, year!=2014), variable="abundance", byFactorNames=c("nutrient","litter","burn_trt")), 
                       aes(x=interaction(nutrient, litter), y=mean, fill=nutrient)) +
   geom_bar(stat='identity') +
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=0.2) +
@@ -143,9 +188,92 @@ grid.arrange(nrow=3, ncol=1,
 #export at 1000x1500
 
 
+# treatment year models --------------------------------------------------------
+
+trtRichness <- lme(richness ~ as.factor(year)*litter + as.factor(year)*nutrient + as.factor(year)*burn_trt + 
+                              litter*nutrient + litter*burn_trt + nutrient*burn_trt + litter*nutrient*burn_trt,
+                   data=subset(invertMetrics, year!=2014),
+                   random = ~1 |watershed/block/plot,
+                   correlation=corAR1(form = ~1 |watershed/block/plot),
+                   control=lmeControl(returnObject=TRUE),
+                   na.action = na.omit)
+anova.lme(trtRichness, type="marginal")
+summary(trtRichness)
+plot(trtRichness, type=c("p","smooth"), col.line=1)
+qqnorm(trtRichness, abline = c(0,1)) ## qqplot
+hist(subset(invertMetrics, year!=2014)$richness)
+
+trtEvenness <- lme(Evar ~ as.factor(year)*litter + as.factor(year)*nutrient + as.factor(year)*burn_trt + 
+                          litter*nutrient + litter*burn_trt + nutrient*burn_trt + litter*nutrient*burn_trt,
+                   data=subset(invertMetrics, year!=2014),
+                   random = ~1 |watershed/block/plot,
+                   correlation=corAR1(form = ~1 |watershed/block/plot),
+                   control=lmeControl(returnObject=TRUE),
+                   na.action = na.omit)
+anova.lme(trtEvenness, type="marginal")
+summary(trtEvenness)
+plot(trtEvenness, type=c("p","smooth"), col.line=1)
+qqnorm(trtEvenness, abline = c(0,1)) ## qqplot
+hist(subset(invertMetrics, year!=2014)$Evar)
+
+trtAbundance <- lme(log(abundance) ~ as.factor(year)*litter + as.factor(year)*nutrient + as.factor(year)*burn_trt + 
+                                     litter*nutrient + litter*burn_trt + nutrient*burn_trt + litter*nutrient*burn_trt,
+                   data=subset(invertMetrics, year!=2014),
+                   random = ~1 |watershed/block/plot,
+                   correlation=corAR1(form = ~1 |watershed/block/plot),
+                   control=lmeControl(returnObject=TRUE),
+                   na.action = na.omit)
+anova.lme(trtAbundance, type="marginal")
+summary(trtAbundance)
+plot(trtAbundance, type=c("p","smooth"), col.line=1)
+qqnorm(trtAbundance, abline = c(0,1)) ## qqplot
+hist(log(subset(invertMetrics, year!=2014)$abundance))
+
+emmeans_litter <- emmeans(trtAbundance, "litter")
+pairs(emmeans_litter)  
+emmeans_nutrient <- emmeans(trtAbundance, "nutrient")
+pairs(emmeans_nutrient)  
 
 
-# PERMANOVAs ----------------------------------------------------------
+# extra abundance figures ------------------------------------------------------
+
+abundanceLitter <- ggplot(barGraphStats(data=subset(invertMetrics, year!=2014), variable="abundance", byFactorNames=c("litter")), 
+                       aes(x=litter, y=mean)) +
+  geom_bar(stat='identity') +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=0.2) +
+  geom_vline(xintercept=3.5) +
+  xlab('Litter Treatment') + ylab('Invertebrate Abundance')
+
+abundanceNutrients <- ggplot(barGraphStats(data=subset(invertMetrics, year!=2014), variable="abundance", byFactorNames=c("nutrient")), 
+                          aes(x=nutrient, y=mean)) +
+  geom_bar(stat='identity') +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=0.2) +
+  geom_vline(xintercept=3.5) +
+  xlab('Nutrient Treatment') + ylab('Invertebrate Abundance')
+
+grid.arrange(nrow=1, ncol=2,
+             abundanceLitter, abundanceNutrients)
+
+
+logAbundanceLitter <- ggplot(barGraphStats(data=subset(invertMetrics, year!=2014), variable="ln_abund", byFactorNames=c("litter")), 
+                          aes(x=litter, y=mean)) +
+  geom_bar(stat='identity') +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=0.2) +
+  geom_vline(xintercept=3.5) +
+  xlab('Litter Treatment') + ylab('ln Invertebrate Abundance')
+
+logAbundanceNutrients <- ggplot(barGraphStats(data=subset(invertMetrics, year!=2014), variable="ln_abund", byFactorNames=c("nutrient")), 
+                             aes(x=nutrient, y=mean)) +
+  geom_bar(stat='identity') +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=0.2) +
+  geom_vline(xintercept=3.5) +
+  xlab('Nutrient Treatment') + ylab('ln Invertebrate Abundance')
+
+grid.arrange(nrow=1, ncol=2,
+             logAbundanceLitter, logAbundanceNutrients)
+
+
+# PERMANOVAs -------------------------------------------------------------------
 
 #PERMANOVA 2014 - burn trts
 comm2014 <- invertComp %>% 
