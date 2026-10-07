@@ -8,23 +8,20 @@ library(lmerTest)
 library(emmeans)
 theme_set(theme_bw(20))
 
-sd<-read.csv("StemDensity_2014-2019.CSV") %>%
-  mutate(plot=str_sub(Plot, -1)) %>% 
-  select(-Plot) %>% 
-  mutate(Plot=paste(Block, plot, sep=""))
+sd<-read.csv("StemDensity_2014-2024.CSV") 
 
-trts<-read.csv("GF_PlotList_Trts.csv") %>% 
-  select(-plot_id) %>% 
-  rename(Burn=Burn.Trt2)%>%
-  select(-Burn.Trt)
-
-sd2<-sd %>% 
-  left_join(trts)
 
 ###analysis of total stems
-total=sd2 %>% 
-  group_by(Year, Watershed, Block, Plot, Litter, Nutrient, treatment, Burn) %>% 
-  summarise(total=sum(stems))
+total=sd %>% 
+  group_by(Year, Watershed, Block, Plot, PlotID, Litter, Nutrient, Burn.Trt, Burn) %>% 
+  summarise(TotalStems=sum(stems)) |> 
+  mutate(LogSD=log(TotalStems))
+
+hist(log(total$total))
+
+write.csv(total, 'C:\\Users\\mavolio2\\Dropbox\\Konza Research\\GhostFire\\DATA\\Compiled data\\StemTotals.csv', row.names=F)
+write_xlsx(total, 'C:\\Users\\mavolio2\\Dropbox\\Konza Research\\GhostFire\\Analyses in SAS\\StemTotals.xlsx')
+
 
 fit <- lmer(total ~  as.factor(Burn)*Litter*Nutrient*as.factor(Year) +(1|Watershed/Block), data = subset(total, Year!=2014))
 anova(fit, ddf='Kenward-Roger')
