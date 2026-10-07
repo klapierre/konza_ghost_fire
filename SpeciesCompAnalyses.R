@@ -8,20 +8,28 @@ library(lme4)
 library(lmerTest)
 library(vegan)
 library(emmeans)
+library(writexl)
 theme_set(theme_bw(20))
 
-sp<-read.csv("SpComp_2014-2019.CSV") %>%
+sp<-read.csv("SpComp_2014-2024.CSV") %>%
   mutate(plot=str_sub(Plot, -1)) %>% 
   select(-Plot) %>% 
   mutate(Plot=paste(Block, plot, sep=""))
 
-trts<-read.csv("GF_PlotList_Trts.csv")
+#trts<-read.csv("GF_PlotList_Trts.csv")
 
-sp2<-sp %>% 
+# sp2<-sp %>% 
+#   left_join(trts)
+
+richeven<-community_structure(sp, time.var="Year", replicate.var = "PlotID", abundance.var = "pcover") %>% 
   left_join(trts)
 
-richeven<-community_structure(sp2, time.var="Year", replicate.var = "plot_id", abundance.var = "pcover") %>% 
-  left_join(trts)
+hist(richeven$richness)
+hist(richeven$Evar)
+
+write.csv(richeven, 'C:\\Users\\mavolio2\\Dropbox\\Konza Research\\GhostFire\\DATA\\Compiled data\\PlantDiversity.csv', row.names=F)
+write_xlsx(richeven, 'C:\\Users\\mavolio2\\Dropbox\\Konza Research\\GhostFire\\Analyses in SAS\\PlantDiversity.xlsx')
+
 
 ###################################
 ###analysis richness
