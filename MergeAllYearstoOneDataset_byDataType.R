@@ -6,6 +6,9 @@ library(tidyverse)
 ##Lots of the data we read in add odd things to the first column, use this code in the read.csv line to not have that
 # fileEncoding="UTF-8-BOM"
 
+#read in treatment
+trts<-read.csv('GF_PlotList.csv')
+
 ######################################################################################
 ######################################################################################
 ######################################################################################
@@ -71,21 +74,21 @@ Light2014Early<-read.csv("GhostFire2014_Data/Light/GhostFire_Light_May2014.csv")
   mutate(BurnFreq=as.factor(BurnFreq))%>%
   select(-burn)
 
-Light2014Late<-read.csv("GhostFire2014_Data/Light/GhostFire_Light_August2014.csv")%>%
-  select(-B_average, -Light)%>%
-  filter(Block!="x") %>% 
-  gather(Rep, Below, Below.1:Below.2)%>%
-  group_by(Year, BurnFreq, Watershed, Block, Plot, Above) %>% 
-  summarise(meanBelow=mean(Below, na.rm=T))%>%
-  mutate(CanopyEffect=((meanBelow/Above)*100))%>%
-  mutate(Season="Late")%>% 
-  mutate(LitterCanopyEffect=NA) %>% 
-  mutate(meanBelowLitter=NA)%>%
-  rename(burn=BurnFreq) %>% 
-  mutate(BurnFreq=ifelse(burn=="Annual", 1, 20)) %>% 
-  ungroup() %>% 
-  mutate(BurnFreq=as.factor(BurnFreq))%>%
-  select(-burn)
+# Light2014Late<-read.csv("GhostFire2014_Data/Light/GhostFire_Light_August2014.csv")%>%
+#   select(-B_average, -Light)%>%
+#   filter(Block!="x") %>% 
+#   gather(Rep, Below, Below.1:Below.2)%>%
+#   group_by(Year, BurnFreq, Watershed, Block, Plot, Above) %>% 
+#   summarise(meanBelow=mean(Below, na.rm=T))%>%
+#   mutate(CanopyEffect=((meanBelow/Above)*100))%>%
+#   mutate(Season="Late")%>% 
+#   mutate(LitterCanopyEffect=NA) %>% 
+#   mutate(meanBelowLitter=NA)%>%
+#   rename(burn=BurnFreq) %>% 
+#   mutate(BurnFreq=ifelse(burn=="Annual", 1, 20)) %>% 
+#   ungroup() %>% 
+#   mutate(BurnFreq=as.factor(BurnFreq))%>%
+#   select(-burn)
 
 Light2015<-read.csv("GhostFire2015_Data/Light/GhostFire_Light_June2015.csv")%>%
   select(-B_Average, -Light)%>%
@@ -148,13 +151,23 @@ Light2022<-read.csv("GhostFire2022_Data/Light/GhostFire_Light_2022.csv")%>%
   mutate(BurnFreq=as.factor(BurnFreq))%>%
   select(-Month)
 
+Light2023<-read.csv("GhostFire2023_Data/Light/GhostFire_Light_2023.csv")%>%
+  group_by(Year, BurnFreq, Watershed, Block, Plot, Above) %>% 
+  mutate(meanBelowLitter=mean(c(Below.Litter.1, Below.Litter.2), na.rm=T), meanBelow=mean(c(Above.Litter.1, Above.Litter.2), na.rm=T))%>%
+  select(-Below.Litter.1, -Below.Litter.2, -Above.Litter.1, -Above.Litter.2, -oldplot) %>% 
+  mutate(LitterCanopyEffect=((meanBelowLitter/Above)*100), CanopyEffect=((meanBelow/Above)*100))%>%
+  mutate(Season="Early")%>%
+  mutate(BurnFreq=as.factor(BurnFreq))%>%
+  select(-Month)
+
 
 #merge all years of Light together with column names Year, BurnFreq, Watershed, Block, Plot, Above, meanBelowLitter, meanBelow, LitterCanopyEffect, CanopyEffect
 #note watershes is spelled correct here
 #note 2014 has both early and late season data
 
-Light_AllYears<-bind_rows(Light2014Early, Light2014Late, Light2015, Light2016, Light2017, Light2018, Light2019, Light2022)
-write.csv(Light_AllYears, "Compiled data/Light_2014_2022.csv", row.names = F)
+Light_AllYears<-bind_rows(Light2014Early, Light2015, Light2016, Light2017, Light2018, Light2019, Light2022, Light2023) |> 
+  left_join(trts)
+write.csv(Light_AllYears, "Compiled data/Light_2014_2023.csv", row.names = F)
 
 
 ######################################################################################
@@ -162,8 +175,8 @@ write.csv(Light_AllYears, "Compiled data/Light_2014_2022.csv", row.names = F)
 ######################################################################################
 ####import all Species Comp data
 SC2014<-read.csv("GhostFire2014_Data/Species Comp/GhostFire_SpComp_2014.csv",fileEncoding="UTF-8-BOM")%>%
-  select(-Experiment, -Site) %>% 
-  group_by(Year, Burn.Trt, Block, Plot, spnum, Species) %>% 
+  select(-Experiment, -Site, -Species) %>% 
+  group_by(Year, Burn.Trt, Block, Plot, spnum) %>% 
   gather(Season, cover, June:August)%>%
   filter(cover!=0)
 
@@ -183,13 +196,18 @@ SC2017<-read.csv("GhostFire2017_Data/SpeciesComp/GhostFire_SpComp_2017.csv", fil
   select(-Experiment, -Site, -Entry, -Max.cov, -X.1, -X.2, -X, -Comments, -Species) %>% 
   group_by(Year, Burn.Trt, Block, Plot, spnum) %>% 
   gather(Season, cover, June:August)%>%
-  filter(cover!=0)
+  filter(cover!=0) |> 
+  left_join(trts, by=c('Block', 'Plot', 'Burn.Trt')) |> 
+  select(-plot, -Litter, -Nutrient)
 
 SC2018<-read.csv("GhostFire2018_Data/SpeciesComp/GhostFire_SpComp_2018.csv",fileEncoding="UTF-8-BOM")%>%
   select(-Experiment, -Site, -X, -Comments, -Species) %>% 
   group_by(Year, Burn.Trt, Block, Plot, spnum) %>% 
   gather(Season, cover, June:August)%>%
-  filter(cover!=0)
+  filter(cover!=0) |> 
+  left_join(trts, by=c('Block', 'Plot', 'Burn.Trt')) |> 
+  select(-plot, -Litter, -Nutrient)
+
 
 SC2019<-read.csv("GhostFire2019_Data/SpeciesComp/GhostFire_SpComp_2019.csv",fileEncoding="UTF-8-BOM")%>%
   select(-Experiment, -Site, -Comments) %>% 
@@ -197,7 +215,10 @@ SC2019<-read.csv("GhostFire2019_Data/SpeciesComp/GhostFire_SpComp_2019.csv",file
   mutate(spnum=as.integer(spnum)) %>% 
   group_by(Year, Burn.Trt, Block, Plot, spnum) %>% 
   gather(Season, cover, June:August)%>%
-  filter(cover!=0)
+  filter(cover!=0) |> 
+  left_join(trts, by=c('Block', 'Plot', 'Burn.Trt')) |> 
+  select(-plot, -Litter, -Nutrient)
+
 
 #No SC2020
 
@@ -207,7 +228,10 @@ SC2021<-read.csv("GhostFire2021_Data/SpeciesComp/GhostFire_SpComp_2021.csv",file
   mutate(spnum=as.integer(spnum)) %>% 
   group_by(Year, Burn.Trt, Block, Plot, spnum) %>% 
   gather(Season, cover, June:August)%>%
-  filter(cover!=0)
+  filter(cover!=0) |> 
+  left_join(trts, by=c('Block', 'Plot', 'Burn.Trt')) |> 
+  select(-plot, -Litter, -Nutrient)
+
 
 SC2022<-read.csv("GhostFire2022_Data/SpeciesComp/GhostFire_SpComp_2022.csv",fileEncoding="UTF-8-BOM")%>%
   select(-Experiment, -Site, -Comments) %>% 
@@ -217,24 +241,42 @@ SC2022<-read.csv("GhostFire2022_Data/SpeciesComp/GhostFire_SpComp_2022.csv",file
   gather(Season, cover, June:August)%>%
   filter(cover!=0)
 
+SC2023<-read.csv("GhostFire2023_Data/SpeciesComp/GhostFire_SpComp_2023.csv",fileEncoding="UTF-8-BOM")%>%
+  select(-Experiment, -Site, -Comments) %>% 
+  filter(spnum!="litter") %>%# there was a lot of litter in 2019
+  mutate(spnum=as.integer(spnum)) %>% 
+  group_by(Year, Burn.Trt, Block, Plot, spnum) %>% 
+  gather(Season, cover, June:August)%>%
+  filter(cover!=0)
+
+SC2024<-read.csv("GhostFire2024_Data/SpeciesComp/GhostFire_SpComp_2024.csv",fileEncoding="UTF-8-BOM")%>%
+  select(-Experiment, -Site, -Comments) %>% 
+  filter(spnum!="litter") %>%# there was a lot of litter in 2019
+  mutate(spnum=as.integer(spnum)) %>% 
+  group_by(Year, Burn.Trt, Block, Plot, spnum) %>% 
+  gather(Season, cover, June:August)%>%
+  filter(cover!=0)
+
+
 #merge all years of SpComp together with column names Year, Burn.Trt, Block, Plot, spnum, Species, Season, cover
 #Now also getting the max cover at this dataset.
 
-SpComp_AllYears<-bind_rows(SC2014, SC2015, SC2016, SC2017, SC2018, SC2019, SC2021, SC2022) %>% 
+SpComp_AllYears<-bind_rows(SC2014, SC2015, SC2016, SC2017, SC2018, SC2019, SC2021, SC2022, SC2023, SC2024) %>% 
   ungroup() %>% 
-  select(-Watershed, -Species) %>% 
+  select(-Species) %>% 
   group_by(Year, Burn.Trt, Block, Plot, spnum) %>% 
   summarize(pcover=max(cover))
 
 # bring in sp list
-SpList<-read.csv("GhostFire_Konza_spplist.csv", fileEncoding="UTF-8-BOM")
+SpList<-read.csv("GhostFire_Konza_spplist.csv", fileEncoding="UTF-8-BOM") |> 
+  filter(spnum!='NA')
 SpComp_AllYears2<-SpComp_AllYears %>% 
   left_join(SpList) 
 ### Check to make sure species names, numbers, and cleaned names match up. 
 #SK checked 2014-2018 and found multiple errors (>15)
 #SK cleaned sp comp and sp list through 2018 on May 21, 2019
 
-write.csv(SpComp_AllYears2, "Compiled data/SpComp_2014-2022.csv", row.names = F)
+write.csv(SpComp_AllYears2, "Compiled data/SpComp_2014-2024.csv", row.names = F)
 
 
 
