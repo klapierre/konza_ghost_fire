@@ -9,49 +9,56 @@ library(tidyverse)
 #read in treatment
 trts<-read.csv('GF_PlotList.csv')
 
+# bring in sp list
+SpList<-read.csv("GhostFire_Konza_spplist.csv")|> 
+  filter(spnum!='NA')
+
 ######################################################################################
 ######################################################################################
 ######################################################################################
+
+#Not focusing in DMP b/c we have ANPP Oct 2026
+
 ####import all DPM data (We are missing data from 2014 and 2017), calculate mean across four pseudo replicates
-DPM2015<-read.csv("GhostFire2015_Data/DiscPasture/GhostFire_Disc Pasture_2015.csv")%>%
-  select(-disc)%>%
-  gather(quad, height, Quad.A:Quad.D)%>%
-  group_by(Year, Wateshed, Plot, Rep) %>% 
-  summarise(meanheight=mean(height, na.rm=T))%>%
-  filter(Year!="NA")
-DPM2016<-read.csv("GhostFire2016_Data/DiscPasture/GhostFire_Disc Pasture_2016.csv")%>%
-  select(-disc)%>%
-  gather(quad, height, Quad.A:Quad.D)%>%
-  group_by(Year, Wateshed, Plot, Rep) %>% 
-  summarise(meanheight=mean(height, na.rm=T))%>%
-  filter(Year!="NA")
-#No 2017 DPM Data
-DPM2018<-read.csv("GhostFire2018_Data/DiscPasture/GhostFire_Disc Pasture_2018.csv")%>%
-  gather(quad, height, Quad.A:Quad.D)%>%
-  group_by(Year, Wateshed, Plot, Rep) %>% 
-  summarise(meanheight=mean(height, na.rm=T))%>%
-  filter(Year!="NA")
-#No 2019 DPM Data
-#No 2020 DPM Data
-DPM2021<-read.csv("GhostFire2021_Data/DiscPasture/enterred/GhostFire_Disc Pasture_2021.csv")%>%
-  gather(quad, height, Quad.A:Quad.D)%>%
-  group_by(Year, Wateshed, Plot, Rep) %>% 
-  summarise(meanheight=mean(height, na.rm=T))%>%
-  filter(Year!="NA")
-DPM2022<-read.csv("GhostFire2022_Data/DiscPasture/GhostFire_Disc Pasture_2022.csv")%>%
-  mutate(Rep=1) %>% 
-  gather(quad, height, Quad.A:Quad.D)%>%
-  group_by(Year, Wateshed, Plot, Rep) %>% 
-  summarise(meanheight=mean(height, na.rm=T))%>%
-  filter(Year!="NA")
-
-
-#merge all years of DPM together with column names Year, Wateshed, Plot, Rep, meanheight
-#not watershe is spelled wrong
-#removed Rep because they were all a 1? Not sure what this column meant
-DPM_AllYears<-bind_rows(DPM2015, DPM2016, DPM2018, DPM2021, DPM2022)%>%
-  select(-Rep)
-write.csv(DPM_AllYears, "Compiled data/DPM_2015_2022.csv", row.names = F)
+# DPM2015<-read.csv("GhostFire2015_Data/DiscPasture/GhostFire_Disc Pasture_2015.csv")%>%
+#   select(-disc)%>%
+#   gather(quad, height, Quad.A:Quad.D)%>%
+#   group_by(Year, Wateshed, Plot, Rep) %>% 
+#   summarise(meanheight=mean(height, na.rm=T))%>%
+#   filter(Year!="NA")
+# DPM2016<-read.csv("GhostFire2016_Data/DiscPasture/GhostFire_Disc Pasture_2016.csv")%>%
+#   select(-disc)%>%
+#   gather(quad, height, Quad.A:Quad.D)%>%
+#   group_by(Year, Wateshed, Plot, Rep) %>% 
+#   summarise(meanheight=mean(height, na.rm=T))%>%
+#   filter(Year!="NA")
+# #No 2017 DPM Data
+# DPM2018<-read.csv("GhostFire2018_Data/DiscPasture/GhostFire_Disc Pasture_2018.csv")%>%
+#   gather(quad, height, Quad.A:Quad.D)%>%
+#   group_by(Year, Wateshed, Plot, Rep) %>% 
+#   summarise(meanheight=mean(height, na.rm=T))%>%
+#   filter(Year!="NA")
+# #No 2019 DPM Data
+# #No 2020 DPM Data
+# DPM2021<-read.csv("GhostFire2021_Data/DiscPasture/enterred/GhostFire_Disc Pasture_2021.csv")%>%
+#   gather(quad, height, Quad.A:Quad.D)%>%
+#   group_by(Year, Wateshed, Plot, Rep) %>% 
+#   summarise(meanheight=mean(height, na.rm=T))%>%
+#   filter(Year!="NA")
+# DPM2022<-read.csv("GhostFire2022_Data/DiscPasture/GhostFire_Disc Pasture_2022.csv")%>%
+#   mutate(Rep=1) %>% 
+#   gather(quad, height, Quad.A:Quad.D)%>%
+#   group_by(Year, Wateshed, Plot, Rep) %>% 
+#   summarise(meanheight=mean(height, na.rm=T))%>%
+#   filter(Year!="NA")
+# 
+# 
+# #merge all years of DPM together with column names Year, Wateshed, Plot, Rep, meanheight
+# #not watershe is spelled wrong
+# #removed Rep because they were all a 1? Not sure what this column meant
+# DPM_AllYears<-bind_rows(DPM2015, DPM2016, DPM2018, DPM2021, DPM2022)%>%
+#   select(-Rep)
+# write.csv(DPM_AllYears, "Compiled data/DPM_2015_2022.csv", row.names = F)
 
 ######################################################################################
 ######################################################################################
@@ -167,7 +174,9 @@ Light2023<-read.csv("GhostFire2023_Data/Light/GhostFire_Light_2023.csv")%>%
 
 Light_AllYears<-bind_rows(Light2014Early, Light2015, Light2016, Light2017, Light2018, Light2019, Light2022, Light2023) |> 
   left_join(trts)
+
 write.csv(Light_AllYears, "Compiled data/Light_2014_2023.csv", row.names = F)
+write_xlsx(Light_AllYears, 'C:\\Users\\mavolio2\\Dropbox\\Konza Research\\GhostFire\\Analyses in SAS\\Light.xlsx')
 
 
 ######################################################################################
@@ -267,11 +276,13 @@ SpComp_AllYears<-bind_rows(SC2014, SC2015, SC2016, SC2017, SC2018, SC2019, SC202
   group_by(Year, Burn.Trt, Block, Plot, spnum) %>% 
   summarize(pcover=max(cover))
 
-# bring in sp list
-SpList<-read.csv("GhostFire_Konza_spplist.csv", fileEncoding="UTF-8-BOM") |> 
-  filter(spnum!='NA')
+ggplot(data=SpComp_AllYears, aes(x=pcover))+
+  geom_histogram()+
+  facet_wrap(~spnum, scales='free')
+
 SpComp_AllYears2<-SpComp_AllYears %>% 
-  left_join(SpList) 
+  left_join(SpList) |> 
+  left_join(trts)
 ### Check to make sure species names, numbers, and cleaned names match up. 
 #SK checked 2014-2018 and found multiple errors (>15)
 #SK cleaned sp comp and sp list through 2018 on May 21, 2019
@@ -344,21 +355,37 @@ SD2022<-read.csv("GhostFire2022_Data/StemDensity/GhostFire_SpringStemD_2022.csv"
   gather(Plot, stems, p1:p6)%>%
   filter(stems!=0)%>% 
   filter(Year!="NA")
+SD2023<-read.csv("GhostFire2023_Data/StemDensity/GhostFire_SpringStemD_2023.csv", fileEncoding="UTF-8-BOM")%>%
+  select(-Format.ID) %>% 
+  group_by(Year, Burn, Watershed, Block, spnum, Species) %>% 
+  gather(Plot, stems, p1:p6)%>%
+  filter(stems!=0)%>% 
+  filter(Year!="NA")
+SD2024<-read.csv("GhostFire2023_Data/StemDensity/GhostFire_SpringStemD_2023.csv", fileEncoding="UTF-8-BOM")%>%
+  select(-Format.ID) %>% 
+  group_by(Year, Burn, Watershed, Block, spnum, Species) %>% 
+  gather(Plot, stems, p1:p6)%>%
+  filter(stems!=0)%>% 
+  filter(Year!="NA")
 
 
 #merge all years of StemDensity together with column names Year, Burn, Watershed, Block, Plot, spnum, Species, stems
 
-StemDensity_AllYears<-bind_rows(SD2014, SD2015, SD2016, SD2017, SD2018, SD2019, SD2021, SD2022)
-# bring in sp list
-SpList<-read.csv("GhostFire_Konza_spplist.csv")
+StemDensity_AllYears<-bind_rows(SD2014, SD2015, SD2016, SD2017, SD2018, SD2019, SD2021, SD2022, SD2023, SD2024)
+
 
 StemDensity_AllYears2<-StemDensity_AllYears %>% 
   right_join(SpList) %>% 
-  filter(Year!="NA")
+  filter(Year!="NA") |> 
+  separate(Plot, into=c('p', 'Plot'), 1) |> 
+  mutate(Plot=as.integer(Plot)) |> 
+  select(-p) |> 
+  left_join(trts)
+
 ### Check to make sure species names, numbers, and cleaned names match up. 
 #SK checked 2014-2018 and found multiple errors (>15)
 #SK cleaned sp comp and sp list through 2018 on May 21, 2019
-write.csv(StemDensity_AllYears2, "Compiled Data/StemDensity_2014-2022.csv", row.names = F)
+write.csv(StemDensity_AllYears2, "Compiled Data/StemDensity_2014-2024.csv", row.names = F)
 
 
 ######################################################################################
@@ -398,10 +425,8 @@ ANPP2018<-read.csv("GhostFire2018_Data/Biomass/GhostFire_Biomass_2018.csv")%>%
 
 ANPP2019<-read.csv("GhostFire2019_Data/Biomass/GhostFire_Biomass_DataEntry2019.csv")%>%
     select(-Notes, -WhoWeighed, -DateWeighed)%>%
-    separate(Plot, c("Block", "Plot"), sep=1) %>% 
     mutate_at(c(7:10), ~replace(., is.na(.), 0)) %>% 
-    mutate(Plot=as.integer(Plot)) %>% 
-  rename(Watershed=Wateshed)
+    rename(Watershed=Wateshed)
 
 ANPP2020<-read.csv("GhostFire2020_Data/Biomass/GhostFire_Biomass_2020.csv", fileEncoding="UTF-8-BOM")%>%
   select(-Notes)%>%
@@ -417,22 +442,45 @@ ANPP2021<-read.csv("GhostFire2021_Data/Biomass/GhostFire_Biomass_Data_2021.csv",
   mutate(Plot=as.integer(Plot)) %>% 
   rename(Watershed=Wateshed)
 
+ANPP2022<-read.csv("GhostFire2022_Data/Biomass/GhostFire_Biomass_Data_2022.csv", fileEncoding="UTF-8-BOM")%>%
+  select(-Notes, -QC_flag)%>%
+  separate(Plot, c("Block", "Plot"), sep=1) %>% 
+  mutate_at(c(7:10), ~replace(., is.na(.), 0)) %>% 
+  mutate(Plot=as.integer(Plot)) %>% 
+  rename(Watershed=Wateshed)
+
+ANPP2023<-read.csv("GhostFire2023_Data/Biomass/GhostFire_Biomass_Data_2023.csv", fileEncoding="UTF-8-BOM")%>%
+  select(-Notes, -QC_flag, -Initial_key, -Initial_weighed, -Date_weighed)%>%
+  separate(Plot, c("Block", "Plot"), sep=1) %>% 
+  mutate_at(c(7:10), ~replace(., is.na(.), 0)) %>% 
+  mutate(Plot=as.integer(Plot)) 
+
+ANPP2024<-read.csv("GhostFire2024_Data/Biomass/GhostFire_ANPP_2024.csv", fileEncoding="UTF-8-BOM")%>%
+  select(-Comments) |> 
+  mutate_at(c(7:10), ~replace(., is.na(.), 0)) %>% 
+  mutate(Plot=as.integer(Plot)) |> 
+  rename(Replicate=Rep, P.Dead=Pdead)
+
 
 #merge all years of ANPP together with column names Year, BurnFreq, Watershed, Block, Plot, Replicate, Grass, Forb, Woody, P.Dead Species, stems
-ANPP_AllYears<-bind_rows(ANPP2014, ANPP2015, ANPP2016, ANPP2018, ANPP2019, ANPP2020, ANPP2021) %>% 
+ANPP_AllYears<-bind_rows(ANPP2014, ANPP2015, ANPP2016, ANPP2018, ANPP2019, ANPP2020, ANPP2021, ANPP2022, ANPP2023, ANPP2024) %>% 
   group_by(Year, BurnFreq, Watershed, Block, Plot) %>% 
   summarize_all(mean) %>% 
   select(-Replicate) 
-write.csv(ANPP_AllYears, "Compiled Data/ANPP_2014-2021_GFPW.csv", row.names = F)
+
+hist(ANPP_AllYears$Forb)
+
+write.csv(ANPP_AllYears, "Compiled Data/ANPP_2014-2024_GFPW.csv", row.names = F)
 
 #merge all years of ANPP together with column names Year, BurnFreq, Watershed, Block, Plot, Replicate, Grass, Forb, Woody, P.Dead Species, stems
-ANPP_AllYears<-bind_rows(ANPP2014, ANPP2015, ANPP2016, ANPP2018, ANPP2019, ANPP2020, ANPP2021) %>% 
-  group_by(Year, BurnFreq, Watershed, Block, Plot) %>% 
-  summarize_all(mean) %>% 
-  select(-Replicate, -P.Dead) %>% 
+ANPP_AllYears_Total<-ANPP_AllYears |> 
   pivot_longer(Grass:Woody, names_to = "Type", values_to = "Biomass") %>% 
   group_by(Year, BurnFreq, Watershed, Block, Plot) %>% 
-  summarise(total=sum(Biomass)*10)
-  
-write.csv(ANPP_AllYears, "Compiled Data/ANPP_2014-2021_TotalOnly.csv", row.names = F)
+  summarise(Total=sum(Biomass)*10) |> 
+  left_join(trts)
 
+hist(log(ANPP_AllYears_Total$total))
+#unlogged looks better, do not log.
+
+write.csv(ANPP_AllYears_Total, "Compiled Data/ANPP_2014-2024_TotalANPP.csv", row.names = F)
+write_xlsx(ANPP_AllYears_Total, 'C:\\Users\\mavolio2\\Dropbox\\Konza Research\\GhostFire\\Analyses in SAS\\ANPP_2014-2024_TotalANPP.xlsx')
