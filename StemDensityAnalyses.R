@@ -6,6 +6,7 @@ library(stringr)
 library(lme4)
 library(lmerTest)
 library(emmeans)
+library(writexl)
 theme_set(theme_bw(20))
 
 sd<-read.csv("StemDensity_2014-2024.CSV") 
@@ -17,7 +18,7 @@ total=sd %>%
   summarise(TotalStems=sum(stems)) |> 
   mutate(LogSD=log(TotalStems))
 
-hist(log(total$total))
+hist(log(total$TotalStems))
 
 write.csv(total, 'C:\\Users\\mavolio2\\Dropbox\\Konza Research\\GhostFire\\DATA\\Compiled data\\StemTotals.csv', row.names=F)
 write_xlsx(total, 'C:\\Users\\mavolio2\\Dropbox\\Konza Research\\GhostFire\\Analyses in SAS\\StemTotals.xlsx')
