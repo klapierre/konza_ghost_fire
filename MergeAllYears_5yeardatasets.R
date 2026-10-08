@@ -58,21 +58,46 @@ resin2014<-read.csv('GhostFire2014_Data\\soil\\GhostFire_resin bags_2014_v2.csv'
   select(Year, Watershed, Block, Plot, nitrate, ammonium) |> 
   group_by(Year, Watershed, Block, Plot) |> 
   summarize_all(mean) |> 
-  left_join(trts) |> 
-  mutate(logNit=log(nitrate))
+  left_join(trts) 
 
-resin2014<-read.csv('GhostFire2014_Data\\soil\\GhostFire_resin bags_2014_v2.csv') |> 
-  rename(Year=year,
-         Watershed=watershed,
-         Block=block,
-         Plot=plot) |> 
-  select(Year, Watershed, Block, Plot, nitrate, ammonium) |> 
-  group_by(Year, Watershed, Block, Plot) |> 
-  summarize_all(mean) |> 
+resin2019_raw<-read.csv('GhostFire2019_Data\\Resins\\GF_N_compiled_raw.csv') |> 
+  filter(problem==0) |> #this drops negative values and one that need to be diluted
+  mutate(dil2=ifelse(dil==0, 1, dil), 
+         ppm=conc*dil2)
+
+#duplicates - not sure what is going on here, looks like samples were run multiple times over serveral days. Just going to average them.
+resin2019<-resin2019_raw |> 
+  select(sample, Ntype, ppm) |> 
+  group_by(sample, Ntype) |> 
+  summarize(n=length(ppm))
+
+resin2019<-resin2019_raw |> 
+  select(sample, Ntype, ppm) |> 
+  group_by(sample, Ntype) |> 
+  summarize(mppm=mean(ppm)) |> 
+  pivot_wider(names_from = 'Ntype', values_from = 'mppm') |> 
+  rename(nitrate=`KCL NO3_NO2 2`,
+         ammonium = `KCl Ammonia 10`)|> 
+  separate(sample, into=c('Watershed', 'Block', 'plotrep'), sep = " ") |> 
+  separate(plotrep, into=c('Plot', 'rep'), sep = "-") |> 
+  mutate(Year=2019,
+         Block=toupper(Block),
+         Watershed=ifelse(Watershed=='ID', '1D', Watershed),
+         Plot=as.integer(Plot)) |> 
+    group_by(Year, Watershed, Block, Plot) |> 
+  summarize_all(mean, na.rm=T) |> 
   left_join(trts) |> 
-  mutate(logNit=log(nitrate))
+  select(-rep)
 
 
 write.csv(mycAll, "Compiled data/Myc_2014_2019_2024.csv", row.names = F)
 write_xlsx(mycAll, 'C:\\Users\\mavolio2\\Dropbox\\Konza Research\\GhostFire\\Analyses in SAS\\Myc_2014_2019_2024.csv.xlsx')
+
+
+######Standing root biomass
+srb2014<-read.csv('GhostFire2014_Data\\Root standing crop\\GF_StandingCrop_2014_SKcleaned_v1.csv')
+
+
+
+###BNPP
 
