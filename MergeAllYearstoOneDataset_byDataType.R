@@ -274,21 +274,29 @@ SpComp_AllYears<-bind_rows(SC2014, SC2015, SC2016, SC2017, SC2018, SC2019, SC202
   ungroup() |> 
   select(-Species) %>% 
   group_by(Year, Burn.Trt, Block, Plot, spnum) %>% 
-  summarize(pcover=max(cover))
+  summarize(pcover=max(cover)) |> 
+  mutate(spnum2=case_when(
+    spnum==112 ~ 111,
+    spnum==80 ~ 300,
+    spnum==253 ~ 228,
+   .default= spnum
+  )) |> 
+  select(-spnum) |> 
+  rename(spnum=spnum2)
 
 ggplot(data=SpComp_AllYears, aes(x=pcover))+
   geom_histogram()+
   facet_wrap(~spnum, scales='free')
-
-test<-SpComp_AllYears %>% 
-  left_join(SpList) |> 
-  left_join(trts) |> 
-  mutate(species=paste(genus, species, sep="_")) |> 
-  select(Year, PlotID, species, pcover) |> 
-  pivot_wider(names_from = 'Year', values_from = 'pcover', values_fill = 0)
-
-
-write.csv(test, 'Compiled data/SpComp_check.csv', row.names = F )
+# 
+# test<-SpComp_AllYears %>% 
+#   left_join(SpList) |> 
+#   left_join(trts) |> 
+#   mutate(species=paste(genus, species, sep="_")) |> 
+#   select(Year, PlotID, species, pcover) |> 
+#   pivot_wider(names_from = 'Year', values_from = 'pcover', values_fill = 0)
+# 
+# 
+# write.csv(test, 'Compiled data/SpComp_check.csv', row.names = F )
 
 SpComp_AllYears2<-SpComp_AllYears %>% 
   left_join(SpList) |> 
@@ -327,7 +335,10 @@ SD2015<-read.csv("GhostFire2015_Data/StemDensity/GhostFire_SpringStemD_2015.csv"
   group_by(Year, Burn, Watershed, Block, spnum, Species) %>% 
   gather(Plot, stems, p1:p6)%>%
   filter(stems!=0) %>% 
-  filter(Year!="NA")
+  filter(Year!="NA") |> 
+  group_by(Year, Burn, Watershed, Block, spnum, Species, Plot) |> 
+  summarize(stems=sum(stems))
+
 SD2016<-read.csv("GhostFire2016_Data/StemDensity/GhostFire_SpringStemD_2016_v2.csv")%>%
   select(-Format.ID) %>% 
   group_by(Year, Burn, Watershed, Block, spnum, Species) %>% 
@@ -371,7 +382,7 @@ SD2023<-read.csv("GhostFire2023_Data/StemDensity/GhostFire_SpringStemD_2023.csv"
   gather(Plot, stems, p1:p6)%>%
   filter(stems!=0)%>% 
   filter(Year!="NA")
-SD2024<-read.csv("GhostFire2023_Data/StemDensity/GhostFire_SpringStemD_2023.csv", fileEncoding="UTF-8-BOM")%>%
+SD2024<-read.csv("GhostFire2024_Data/StemDensity/GhostFire_SpringStemDensity_2024.csv", fileEncoding="UTF-8-BOM")%>%
   select(-Format.ID) %>% 
   group_by(Year, Burn, Watershed, Block, spnum, Species) %>% 
   gather(Plot, stems, p1:p6)%>%
@@ -392,17 +403,16 @@ StemDensity_AllYears2<-StemDensity_AllYears %>%
   select(-p) |> 
   left_join(trts)
 
-test1<-StemDensity_AllYears2 |> 
-  group_by(Year, PlotID, spnum, Species) |> 
-  summarize(n=length(stems))
+# test1<-StemDensity_AllYears2 |> 
+#   group_by(Year, PlotID, spnum, Species) |> 
+#   summarize(n=length(stems))
+# there is sorg in 15 2x, once for 6 stems and once for 1. I am adding those in the 2015 line code
 
-write.csv(test1, 'Compiled data/SD_speicestwiceinaplot_check.csv', row.names = F )
-
-test2<-StemDensity_AllYears2 %>% 
-  select(-Species) |> 
-  mutate(species=paste(genus, species, sep="_")) |> 
-  select(Year, PlotID, species, stems) |> 
-  pivot_wider(names_from = 'Year', values_from = 'stems', values_fill = 0)
+#there does not seem to be an outlier
+ggplot(data=StemDensity_AllYears2, aes(x=Year, y=stems, color=species))+
+  geom_line()+
+  facet_wrap(~PlotID)+
+  theme(legend.position = 'none')
 
 ### Check to make sure species names, numbers, and cleaned names match up. 
 #SK checked 2014-2018 and found multiple errors (>15)
