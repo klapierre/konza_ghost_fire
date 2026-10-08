@@ -1,6 +1,6 @@
 setwd("~/Dropbox/Ghost Fire/DATA")
 setwd("C:\\Users\\mavolio2\\Dropbox\\Konza Research\\GhostFire\\Data")
-setwd("E:\\Dropbox\\Konza Research\\GhostFire\\Data")
+
 library(tidyverse)
 
 ##Lots of the data we read in add odd things to the first column, use this code in the read.csv line to not have that
@@ -271,7 +271,7 @@ SC2024<-read.csv("GhostFire2024_Data/SpeciesComp/GhostFire_SpComp_2024.csv",file
 #Now also getting the max cover at this dataset.
 
 SpComp_AllYears<-bind_rows(SC2014, SC2015, SC2016, SC2017, SC2018, SC2019, SC2021, SC2022, SC2023, SC2024) %>% 
-  ungroup() %>% 
+  ungroup() |> 
   select(-Species) %>% 
   group_by(Year, Burn.Trt, Block, Plot, spnum) %>% 
   summarize(pcover=max(cover))
@@ -279,6 +279,16 @@ SpComp_AllYears<-bind_rows(SC2014, SC2015, SC2016, SC2017, SC2018, SC2019, SC202
 ggplot(data=SpComp_AllYears, aes(x=pcover))+
   geom_histogram()+
   facet_wrap(~spnum, scales='free')
+
+test<-SpComp_AllYears %>% 
+  left_join(SpList) |> 
+  left_join(trts) |> 
+  mutate(species=paste(genus, species, sep="_")) |> 
+  select(Year, PlotID, species, pcover) |> 
+  pivot_wider(names_from = 'Year', values_from = 'pcover', values_fill = 0)
+
+
+write.csv(test, 'Compiled data/SpComp_check.csv', row.names = F )
 
 SpComp_AllYears2<-SpComp_AllYears %>% 
   left_join(SpList) |> 
@@ -381,6 +391,18 @@ StemDensity_AllYears2<-StemDensity_AllYears %>%
   mutate(Plot=as.integer(Plot)) |> 
   select(-p) |> 
   left_join(trts)
+
+test1<-StemDensity_AllYears2 |> 
+  group_by(Year, PlotID, spnum, Species) |> 
+  summarize(n=length(stems))
+
+write.csv(test1, 'Compiled data/SD_speicestwiceinaplot_check.csv', row.names = F )
+
+test2<-StemDensity_AllYears2 %>% 
+  select(-Species) |> 
+  mutate(species=paste(genus, species, sep="_")) |> 
+  select(Year, PlotID, species, stems) |> 
+  pivot_wider(names_from = 'Year', values_from = 'stems', values_fill = 0)
 
 ### Check to make sure species names, numbers, and cleaned names match up. 
 #SK checked 2014-2018 and found multiple errors (>15)
