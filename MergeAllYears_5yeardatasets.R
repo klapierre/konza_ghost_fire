@@ -49,4 +49,30 @@ write_xlsx(mycAll, 'C:\\Users\\mavolio2\\Dropbox\\Konza Research\\GhostFire\\Ana
 
 
 ##Soil resins
+#check for outliers when read in
+resin2014<-read.csv('GhostFire2014_Data\\soil\\GhostFire_resin bags_2014_v2.csv') |> 
+  rename(Year=year,
+         Watershed=watershed,
+         Block=block,
+         Plot=plot) |> 
+  select(Year, Watershed, Block, Plot, nitrate, ammonium) |> 
+  group_by(Year, Watershed, Block, Plot) |> 
+  summarize_all(mean) |> 
+  left_join(trts) |> 
+  mutate(logNit=log(nitrate))
+
+resin2014<-read.csv('GhostFire2014_Data\\soil\\GhostFire_resin bags_2014_v2.csv') |> 
+  rename(Year=year,
+         Watershed=watershed,
+         Block=block,
+         Plot=plot) |> 
+  select(Year, Watershed, Block, Plot, nitrate, ammonium) |> 
+  group_by(Year, Watershed, Block, Plot) |> 
+  summarize_all(mean) |> 
+  left_join(trts) |> 
+  mutate(logNit=log(nitrate))
+
+
+write.csv(mycAll, "Compiled data/Myc_2014_2019_2024.csv", row.names = F)
+write_xlsx(mycAll, 'C:\\Users\\mavolio2\\Dropbox\\Konza Research\\GhostFire\\Analyses in SAS\\Myc_2014_2019_2024.csv.xlsx')
 
