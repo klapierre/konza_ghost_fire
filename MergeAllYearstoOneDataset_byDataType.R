@@ -509,10 +509,12 @@ ANPP_AllYears_Total<-ANPP_AllYears |>
   pivot_longer(Grass:Woody, names_to = "Type", values_to = "Biomass") %>% 
   group_by(Year, BurnFreq, Watershed, Block, Plot) %>% 
   summarise(Total=sum(Biomass)*10) |> 
-  left_join(trts)
+  left_join(trts) |> 
+  mutate(logANPP=log(Total))
 
-hist(log(ANPP_AllYears_Total$total))
-#unlogged looks better, do not log.
+hist(log(ANPP_AllYears_Total$Total))
+hist(ANPP_AllYears_Total$Total)
+#logged looks better, log.
 
 write.csv(ANPP_AllYears_Total, "Compiled Data/ANPP_2014-2024_TotalANPP.csv", row.names = F)
 write_xlsx(ANPP_AllYears_Total, 'C:\\Users\\mavolio2\\Dropbox\\Konza Research\\GhostFire\\Analyses in SAS\\ANPP_2014-2024_TotalANPP.xlsx')
