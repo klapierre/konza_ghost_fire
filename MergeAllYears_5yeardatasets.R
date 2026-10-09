@@ -179,12 +179,13 @@ plot(bnappall$Dry_mass, bnappall$AFDM)
 bnappall2<-bnappall |> 
   #mutate(AFDM2=ifelse(is.na(AFDM), 0.60423*drymass+0.04203, AFDM)) |> 
   select(-Dry_mass) |> 
-  left_join(trts) |> 
   filter(!is.na(AFDM)) |> 
-  mutate(logBNPP=log(AFDM))
-
+  group_by(Year, Watershed, Block, Plot) |> 
+  summarise(mAFDM=mean(AFDM, na.rm=T)) |> 
+  left_join(trts) |> 
+  mutate(logBNPP=log(mAFDM)) 
   
-hist(bnappall2$AFDM)
+hist(log(bnappall2$mAFDM))
   
 write.csv(bnappall2, "Compiled data/BNPP_2014_2019_2024.csv", row.names = F)
 write_xlsx(bnappall2, 'C:\\Users\\mavolio2\\Dropbox\\Konza Research\\GhostFire\\Analyses in SAS\\BNPP_2014_2019_2024.xlsx')
