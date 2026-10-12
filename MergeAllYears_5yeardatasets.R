@@ -182,10 +182,11 @@ bnappall2<-bnappall |>
   filter(!is.na(AFDM)) |> 
   group_by(Year, Watershed, Block, Plot) |> 
   summarise(mAFDM=mean(AFDM, na.rm=T)) |> 
+  mutate(AFDMgm=mAFDM/0.001963) |> 
   left_join(trts) |> 
-  mutate(logBNPP=log(mAFDM)) 
+  mutate(logBNPP=log(AFDMgm)) 
   
-hist(log(bnappall2$mAFDM))
+hist(log(bnappall2$AFDMgm))
   
 write.csv(bnappall2, "Compiled data/BNPP_2014_2019_2024.csv", row.names = F)
 write_xlsx(bnappall2, 'C:\\Users\\mavolio2\\Dropbox\\Konza Research\\GhostFire\\Analyses in SAS\\BNPP_2014_2019_2024.xlsx')
