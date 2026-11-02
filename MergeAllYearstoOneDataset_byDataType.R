@@ -143,8 +143,6 @@ Light2019<-read.csv("GhostFire2019_Data/Light/GhostFire_Light_2019.csv")%>%
   mutate(LitterCanopyEffect=((meanBelowLitter/Above)*100), CanopyEffect=((meanBelow/Above)*100))%>%
   mutate(Season="Early")%>%
   mutate(BurnFreq=as.factor(BurnFreq))%>%
-  select(-Month)
-#str(Light2018)
 
 #No Light2020
 #No Light2021 but Sally should look for it in raw data sheets
@@ -166,6 +164,16 @@ Light2023<-read.csv("GhostFire2023_Data/Light/GhostFire_Light_2023.csv")%>%
   mutate(Season="Early")%>%
   mutate(BurnFreq=as.factor(BurnFreq))%>%
   select(-Month)
+
+Light2024<-read.csv("GhostFire2023_Data/Light/GhostFire_Light_2023.csv")%>%
+  group_by(Year, BurnFreq, Watershed, Block, Plot, Above) %>% 
+  mutate(meanBelowLitter=mean(c(Below.Litter.1, Below.Litter.2), na.rm=T), meanBelow=mean(c(Above.Litter.1, Above.Litter.2), na.rm=T))%>%
+  select(-Below.Litter.1, -Below.Litter.2, -Above.Litter.1, -Above.Litter.2, -oldplot) %>% 
+  mutate(LitterCanopyEffect=((meanBelowLitter/Above)*100), CanopyEffect=((meanBelow/Above)*100))%>%
+  mutate(Season="Early")%>%
+  mutate(BurnFreq=as.factor(BurnFreq))%>%
+  select(-Month)
+
 
 
 #merge all years of Light together with column names Year, BurnFreq, Watershed, Block, Plot, Above, meanBelowLitter, meanBelow, LitterCanopyEffect, CanopyEffect
