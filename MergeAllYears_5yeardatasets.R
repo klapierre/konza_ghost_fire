@@ -164,15 +164,13 @@ bnpp2019<-read.csv('GhostFire2019_Data\\Roots\\GhostFire BNPP_2019.csv') |>
   mutate(Rep=ifelse(Rep=='A', 1, 2))
 
 bnpp2024<-read.csv('GhostFire2024_Data\\Roots\\GhostFire_BNPP_2024.csv') |> 
-  select(Year, Watershed, Block, Plot, Rep, Dry_mass, AFDM) 
+  select(Year, Watershed, Block, Plot, Rep, Dry_mass, AFDM)
 
 bnappall<-bnpp2014 |> 
   bind_rows(bnpp2019, bnpp2024)
 
 summary(lm(AFDM~Dry_mass, data=bnappall))
-# m = 0.60423
-# b = 0.04203
-# r2= 0.985
+#this is weak and we are not doing it
 
 plot(bnappall$Dry_mass, bnappall$AFDM)
 
